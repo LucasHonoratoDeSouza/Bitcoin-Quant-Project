@@ -1,0 +1,1 @@
+aqui ficará as regras de distribuição entre caixa, bitcoin e empréstimo

@@ -1,0 +1,1 @@
+Aqui ficará toda logica matematica

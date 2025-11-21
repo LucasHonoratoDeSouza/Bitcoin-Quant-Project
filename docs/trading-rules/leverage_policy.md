@@ -1,0 +1,1 @@
+aqui ficará as regras de alavancagem com empréstimos
