@@ -1,8 +1,8 @@
 import chaindl
 import pandas as pd
 
-def get_rup():
-    url = "https://chainexposed.com/RelativeUnrealizedProfit.html"
+def get_mm():
+    url = "https://chainexposed.com/MayerMultiple.html"
     df = chaindl.download(url)
 
     df.index = pd.to_datetime(df.index)
@@ -14,6 +14,8 @@ def get_rup():
     else:
         line_yest = df[df.index < pd.Timestamp.today().normalize()].iloc[-1]
 
-    rup_yest = line_yest["RUP"]
+    mm_yest = line_yest["Mayer Multiple"]
 
-    return float(rup_yest)
+    return float(mm_yest)
+
+print(get_mm())

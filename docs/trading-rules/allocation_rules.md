@@ -1,1 +1,6 @@
-aqui ficará as regras de distribuição entre caixa, bitcoin e empréstimo
+The Allocation Rules module defines how capital is distributed between:
+
+Cash
+BTC Exposure
+Borrowed Capital (Leverage)
+
