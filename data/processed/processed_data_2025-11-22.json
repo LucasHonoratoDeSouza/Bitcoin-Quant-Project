@@ -1,13 +1,13 @@
 {
-    "timestamp": "2025-11-22T16:00:16.769014",
+    "timestamp": "2025-11-22T17:03:39.200787",
     "raw_source": "data/raw/daily_data_2025-11-22.json",
     "market_data": {
-        "current_price": 84587.49039396494,
-        "daily_change_pct": -0.5459161652096843,
-        "weekly_change_pct": -11.434418410486888,
-        "monthly_change_pct": -23.136184183606122,
-        "ema_365": 104956.08076119985,
-        "price_vs_ema_pct": -19.40677492862783
+        "current_price": 84643.99859155259,
+        "daily_change_pct": -0.47947642342209384,
+        "weekly_change_pct": -11.375252671432373,
+        "monthly_change_pct": -23.084835743414033,
+        "ema_365": 104956.3895491648,
+        "price_vs_ema_pct": -19.35317234602212
     },
     "flags": {
         "is_accumulation": false,

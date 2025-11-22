@@ -1,12 +1,12 @@
 {
-    "timestamp": "2025-11-22T16:00:16.769014",
+    "timestamp": "2025-11-22T17:03:39.200787",
     "metrics": {
         "btc_price_ema_365": {
-            "current_price": 84587.49039396494,
-            "ema_365": 104956.08076119985,
-            "daily_change_pct": -0.5459161652096843,
-            "weekly_change_pct": -11.434418410486888,
-            "monthly_change_pct": -23.136184183606122
+            "current_price": 84643.99859155259,
+            "ema_365": 104956.3895491648,
+            "daily_change_pct": -0.47947642342209384,
+            "weekly_change_pct": -11.375252671432373,
+            "monthly_change_pct": -23.084835743414033
         },
         "interest_rate": {
             "current_rate": 4.09,
@@ -37,10 +37,10 @@
             "inflation_trend": 0.08348000123883015
         },
         "derivatives": {
-            "open_interest": 99021.129,
+            "open_interest": 99001.583,
             "long_short_ratio": null,
-            "funding_rate": 5.057e-05,
-            "basis_pct": -0.03240054154713224
+            "funding_rate": 5.093e-05,
+            "basis_pct": -0.03283792501403403
         },
         "fear_and_greed": {
             "value": 11,

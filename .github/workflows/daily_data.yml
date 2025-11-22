@@ -23,6 +23,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run first script
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: |
           python src/data/download.py
 
