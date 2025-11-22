@@ -21,6 +21,7 @@ from src.data.get_data.dollar_strength import get_dollar_strength
 from src.data.get_data.inflation import get_inflation_data
 from src.data.get_data.derivatives import get_binance_derivatives
 from src.data.get_data.sentiment import get_fear_and_greed
+from src.data.get_data.correlations import get_macro_correlations
 
 def download_all_data():
     print("Starting daily data download...")
@@ -43,7 +44,8 @@ def download_all_data():
         ("dollar_strength", get_dollar_strength),
         ("inflation", get_inflation_data),
         ("derivatives", get_binance_derivatives),
-        ("fear_and_greed", get_fear_and_greed)
+        ("fear_and_greed", get_fear_and_greed),
+        ("macro_correlations", get_macro_correlations)
     ]
 
     for key, func in fetchers:

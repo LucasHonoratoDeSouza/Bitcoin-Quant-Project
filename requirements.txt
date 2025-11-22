@@ -2,3 +2,4 @@ chaindl
 pandas
 requests
 python-dotenv
+yfinance
