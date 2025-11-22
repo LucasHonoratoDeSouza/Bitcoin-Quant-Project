@@ -1,0 +1,31 @@
+name: Daily Python Jobs
+
+on:
+  schedule:
+    - cron: "0 15 * * *"   # roda todo dia às 15:00 UTC (~12:00 no Brasil)
+  workflow_dispatch:       # permite rodar manualmente também
+
+jobs:
+  run-daily-scripts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run first script
+        run: |
+          python src/data/download.py
+
+      - name: Run second script
+        run: |
+          python src/strategy/process_data.py
