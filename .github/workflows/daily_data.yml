@@ -31,3 +31,11 @@ jobs:
       - name: Run second script
         run: |
           python src/strategy/process_data.py
+
+      - name: Commit and Push Data
+        run: |
+          git config --global user.name "LucasHonoratoDeSouza"
+          git config --global user.email "lucashonoratodesouza10@gmail.com"
+          git add data/raw/*.json data/processed/*.json
+          git commit -m "🤖 Daily Data Update: $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          git push
