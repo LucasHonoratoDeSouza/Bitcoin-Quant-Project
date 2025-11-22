@@ -24,3 +24,9 @@ def get_ema():
     ema_365 = series.ewm(span=365, adjust=False).mean()
     
     return float(ema_365.iloc[-1])
+
+if __name__ == "__main__":
+    try:
+        print(get_ema())
+    except Exception as e:
+        print(f"Error: {e}")

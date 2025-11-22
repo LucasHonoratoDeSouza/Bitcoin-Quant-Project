@@ -18,4 +18,8 @@ def get_sopr():
 
     return float(sopr_yest)
 
-print(get_sopr())
+if __name__ == "__main__":
+    try:
+        print(get_sopr())
+    except Exception as e:
+        print(f"Error: {e}")

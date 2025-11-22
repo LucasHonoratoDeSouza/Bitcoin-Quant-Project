@@ -1,2 +1,4 @@
 chaindl
 pandas
+requests
+python-dotenv

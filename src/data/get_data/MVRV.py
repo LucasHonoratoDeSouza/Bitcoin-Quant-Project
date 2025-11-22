@@ -18,3 +18,9 @@ def get_mvrv():
 
     return float(mvrv_yest)
 
+if __name__ == "__main__":
+    try:
+        print(get_mvrv())
+    except Exception as e:
+        print(f"Error: {e}")
+

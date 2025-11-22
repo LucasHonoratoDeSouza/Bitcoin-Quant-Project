@@ -10,15 +10,17 @@ def get_mvrvc():
     yest = pd.Timestamp.today().normalize() - pd.Timedelta(days=1)
 
     if yest in df.index:
-        linha_ontem = df.loc[yest]
+        line_yest = df.loc[yest]
     else:
-        linha_ontem = df[df.index < pd.Timestamp.today().normalize()].iloc[-1]
+        line_yest = df[df.index < pd.Timestamp.today().normalize()].iloc[-1]
 
-    sth_ontem = linha_ontem["Short Term Holder MVRV 7d MA"]
-    lth_ontem = linha_ontem["Long Term Holder MVRV 7d MA"][0]
+    sth_yest = line_yest["Short Term Holder MVRV 7d MA"]
+    lth_yest = line_yest["Long Term Holder MVRV 7d MA"][0]
 
-    floatsth, floatlth = float(sth_ontem), float(lth_ontem)
+    return float(sth_yest), float(lth_yest)
 
-    return floatsth, floatlth
-
-print(get_mvrvc())
+if __name__ == "__main__":
+    try:
+        print(get_mvrvc())
+    except Exception as e:
+        print(f"Error: {e}")

@@ -17,3 +17,9 @@ def get_rup():
     rup_yest = line_yest["RUP"]
 
     return float(rup_yest)
+
+if __name__ == "__main__":
+    try:
+        print(get_rup())
+    except Exception as e:
+        print(f"Error: {e}")
