@@ -12,6 +12,9 @@ This project solves that problem by replacing **emotion** with **math**.
 
 We have built a sophisticated **Quantitative Engine** that analyzes the market from every angle (On-Chain Data, Macroeconomics, Derivatives, Sentiment) to make objective, high-probability capital allocation decisions.
 
+> **🎯 Investment Horizon**: **Medium to Long Term**.
+> This system is designed for **Wealth Accumulation**, not high-frequency day trading. It aims to catch major market cycles (months to years) while protecting capital during multi-year bear markets.
+
 ## 🧠 Core Technology
 
 ### 1. The Analytical Engine (QuantScorer)
@@ -85,4 +88,4 @@ Transparency is key. The system maintains a permanent, immutable record of every
 Check the `reports/daily/` folder for the generated investment memos.
 
 ---
-*Built with Python, Pandas, and Financial Discipline.*
+*Built with Python and Financial Discipline.*
