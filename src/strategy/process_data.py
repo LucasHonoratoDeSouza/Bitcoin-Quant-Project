@@ -187,7 +187,18 @@ def process_daily_data(raw_file_path):
     processed = {
         "timestamp": raw_data["timestamp"],
         "raw_source": raw_file_path,
-        "market_data": get_market_context(raw_data), # Added raw market context
+        "market_data": get_market_context(raw_data),
+        "metrics": {
+            "mvrv": raw_data["metrics"].get("mvrv"),
+            "sopr": raw_data["metrics"].get("sopr"),
+            "rup": raw_data["metrics"].get("rup"),
+            "mayer_multiple": raw_data["metrics"].get("mayer_multiple"),
+            "fear_and_greed": raw_data["metrics"].get("fear_and_greed", {}).get("value"),
+            "interest_rate": raw_data["metrics"].get("interest_rate", {}).get("current_rate"),
+            "m2_yoy": raw_data["metrics"].get("m2_supply", {}).get("m2_year_pct"),
+            "inflation_yoy": raw_data["metrics"].get("inflation", {}).get("yoy_inflation_pct"),
+            "funding_rate": raw_data["metrics"].get("derivatives", {}).get("funding_rate")
+        },
         "flags": {}
     }
     

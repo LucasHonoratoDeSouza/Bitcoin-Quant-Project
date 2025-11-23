@@ -15,6 +15,9 @@ process:
 run: download process
 	@echo "🚀 Daily workflow completed!"
 
+paper: download process
+	$(PYTHON) src/main_paper_trading.py
+
 clean:
 	rm -rf __pycache__
 	rm -rf src/__pycache__
