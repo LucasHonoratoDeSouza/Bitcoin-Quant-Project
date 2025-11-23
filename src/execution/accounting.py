@@ -163,6 +163,65 @@ class AccountingSystem:
 """
         return report
 
+    def update_readme(self):
+        """
+        Updates the 'Live Paper Trading' section in README.md with the latest stats.
+        """
+        readme_path = "README.md"
+        if not os.path.exists(readme_path):
+            print("⚠️ README.md not found. Skipping update.")
+            return
+
+        if not self.state or not self.state["history"]:
+            return
+
+        latest = self.state["history"][-1]
+        initial = self.state["initial_capital"]
+        current = latest["equity"]
+        profit = current - initial
+        roi = (profit / initial) * 100
+        
+        # Calculate Win Rate (Simple version: Profitable Trades / Total Trades)
+        # For now, we just track if Equity > Initial as "Winning"
+        status_icon = "🟢" if profit >= 0 else "🔴"
+        status_text = "Profitable" if profit >= 0 else "Drawdown"
+        
+        # Read README
+        with open(readme_path, "r") as f:
+            content = f.read()
+            
+        # Update Table Rows using Regex or simple string replacement if format is strict
+        # We'll use a robust string replacement for the specific lines
+        
+        import re
+        
+        # Update Current Equity
+        content = re.sub(
+            r"\| \*\*Current Equity\*\* \| `\$[\d,]+\.\d{2}` \|",
+            f"| **Current Equity** | `${current:,.2f}` |",
+            content
+        )
+        
+        # Update Net Profit
+        content = re.sub(
+            r"\| \*\*Net Profit\*\* \| `[\-\$][\d,]+\.\d{2}` \| \*\*[\+\-]\d+\.\d{2}%\*\* \|",
+            f"| **Net Profit** | `${profit:,.2f}` | **{roi:+.2f}%** |",
+            content
+        )
+        
+        # Update Status Quote
+        # > **Status**: 🟢 **Active** & **Profitable** (Capital Preserved).
+        content = re.sub(
+            r"> \*\*Status\*\*: .*",
+            f"> **Status**: {status_icon} **Active** & **{status_text}** (Capital Preserved).",
+            content
+        )
+        
+        with open(readme_path, "w") as f:
+            f.write(content)
+        
+        print("✅ README.md updated with latest metrics.")
+
     def _save_state(self):
         # Ensure dir exists
         Path(self.state_file).parent.mkdir(parents=True, exist_ok=True)

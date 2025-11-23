@@ -83,5 +83,8 @@ def run_daily_paper_trading():
     with open("latest_report.md", "w") as f:
         f.write(report)
 
+    # 8. Update README.md
+    accounting.update_readme()
+
 if __name__ == "__main__":
     run_daily_paper_trading()
