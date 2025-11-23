@@ -107,7 +107,20 @@ class AccountingSystem:
                 self.state["debt"] -= repay_amount
                 self.state["cash"] -= repay_amount
 
+        self._log_order_csv(side, amount_usd, price, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         self._save_state()
+
+    def _log_order_csv(self, side, amount_usd, price, date_str):
+        csv_file = "data/accounting/order_book.csv"
+        file_exists = os.path.isfile(csv_file)
+        
+        btc_amount = amount_usd / price
+        
+        with open(csv_file, "a") as f:
+            if not file_exists:
+                f.write("Date,Side,Amount_USD,Price,BTC_Amount\n")
+            
+            f.write(f"{date_str},{side},{amount_usd:.2f},{price:.2f},{btc_amount:.8f}\n")
 
     def generate_report(self):
         if not self.state or not self.state["history"]:
