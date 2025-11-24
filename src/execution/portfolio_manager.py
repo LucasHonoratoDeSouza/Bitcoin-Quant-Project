@@ -40,6 +40,8 @@ class PortfolioManager:
         
         diff_usd = target_btc_value - current_btc_value
         
+        print(f"DEBUG: Equity={net_equity}, TargetAlloc={target_allocation}, TargetBTC={target_btc_value}, CurrentBTC={current_btc_value}, Diff={diff_usd}")
+
         # Check Threshold
         if abs(diff_usd) < self.min_trade_usd:
             return None
@@ -69,43 +71,53 @@ class PortfolioManager:
             return Order(side="SELL", amount_usd=amount, reason=self._get_reason(lt_score, mt_score))
 
     def _get_target_allocation(self, lt, mt, current):
-        # 0. Super Bull (Leveraged) -> 2.0x
-        if lt > 80 and mt > 60:
-            return 2.0
+        # 0. Super Bull (Leveraged) -> Scales from 1.0x to 2.0x
+        # Trigger: LT > 75 AND MT > 50
+        if lt > 75 and mt > 50:
+            # Linear scale: 75 -> 1.0, 100 -> 2.0
+            # Formula: 1.0 + ((LT - 75) / 25)
+            leverage = 1.0 + ((lt - 75) / 25)
+            return min(leverage, 2.0) # Cap at 2.0
             
-        # 1. Strong Buy (All In)
-        if lt > 50 and mt > 30:
+        # 1. Strong Buy (High Conviction) -> 100%
+        if lt > 40 and mt > 0:
             return 1.0
             
-        # 2. Sell Everything (Capital Preservation)
-        if lt < -50 and mt < -30:
+        # 2. Bear Market (Defensive) -> 0%
+        if lt < -40:
             return 0.0
             
-        # 3. Stay Cash (Don't catch falling knives)
-        if lt < -50 and mt < -50:
-            return 0.0
+        # 3. Accumulate (Dip Buying) -> Dynamic DCA
+        # Trigger: LT > 20 AND MT < -20
+        if lt > 20 and mt < -20:
+            # Buy more as dip deepens.
+            # Example: MT -20 -> +10%. MT -60 -> +30%.
+            # Formula: Current + (abs(MT) / 200)
+            addition = abs(mt) / 200
+            return min(current + addition, 1.0)
             
-        # 4. Accumulate (DCA into dip)
-        if lt > 30 and mt < -30:
-            return min(current + 0.10, 1.0)
+        # 4. Sell Rally (Trim) -> Dynamic Trimming
+        # Trigger: LT < 20 AND MT > 20
+        if lt < 20 and mt > 20:
+            # Sell more as rally heats up.
+            # Example: MT 20 -> -10%. MT 60 -> -30%.
+            # Formula: Current - (MT / 200)
+            reduction = mt / 200
+            return max(current - reduction, 0.0)
             
-        # 5. Sell Rally (Reduce exposure)
-        if lt < -30 and mt > 30:
-            return max(current - 0.20, 0.0)
-            
-        # 6. Buy Scalp (Tactical, limited exposure)
+        # 5. Buy Scalp (Tactical) -> Max 30%
+        # Trigger: Any LT, MT > 50
         if mt > 50:
             return min(current + 0.20, 0.30)
             
-        # 7. Neutral / No Signal
+        # 6. Neutral / No Signal
         return current
 
     def _get_reason(self, lt, mt):
-        if lt > 80 and mt > 60: return "Super Bull (Leveraged Buy)"
-        if lt > 50 and mt > 30: return "Strong Buy (High Conviction)"
-        if lt < -50 and mt < -30: return "Sell Everything (Bear Market)"
-        if lt < -50 and mt < -50: return "Stay Cash (Extreme Risk)"
-        if lt > 30 and mt < -30: return "Accumulate (Dip Buying)"
-        if lt < -30 and mt > 30: return "Sell Rally (Exit Liquidity)"
+        if lt > 75 and mt > 50: return f"Super Bull (Leverage {1.0 + ((lt - 75) / 25):.2f}x)"
+        if lt > 40 and mt > 0: return "Strong Buy (High Conviction)"
+        if lt < -40: return "Bear Market (Defensive)"
+        if lt > 20 and mt < -20: return f"Accumulate (Dip Intensity {abs(mt)})"
+        if lt < 20 and mt > 20: return f"Sell Rally (Heat {mt})"
         if mt > 50: return "Buy Scalp (Tactical)"
-        return "Rebalance"
+        return "Rebalance (Neutral)"

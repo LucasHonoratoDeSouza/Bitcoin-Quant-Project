@@ -1,6 +1,6 @@
 {
-    "cash": 1400.0,
-    "btc_amount": 0.00692895159878141,
+    "cash": 1811.3,
+    "btc_amount": 0.0021791552778167534,
     "debt": 0.0,
     "initial_capital": 2000.0,
     "history": [
@@ -110,6 +110,16 @@
             "cash": 1400.0,
             "btc_amount": 0.00692895159878141,
             "btc_value": 600.0,
+            "debt": 0.0,
+            "equity": 2000.0,
+            "interest_paid": 0.0
+        },
+        {
+            "date": "2025-11-23",
+            "price": 86593.18678247393,
+            "cash": 1811.3,
+            "btc_amount": 0.0021791552778167534,
+            "btc_value": 188.7,
             "debt": 0.0,
             "equity": 2000.0,
             "interest_paid": 0.0
