@@ -64,31 +64,7 @@ Transparency is key. The system maintains a permanent, immutable record of every
 | :--- | :--- | :--- | :--- |
 | **Total Return** | +195.51% | **+225.73%** | **+30.22%** 🚀 |
 | **Max Drawdown** | -76.63% | **-51.36%** | **-25.27%** 🛡️ |
-| **Test Period** | Jan 2021 - Nov 2025 | 4+ Years | **Full Cycle** |
-| **Data Quality** | Real Prices | **Real Macro (FRED)** | 🏛️ **Fed Data** |
-
-### What This Means
-
-**✅ Beat the Market**: The strategy outperformed passive Buy & Hold by 7.39% over 4+ years.
-
-**🛡️ Survived Extremes**: The backtest includes:
-- 🚀 **2021 Bull Run** (BTC: $29k → $69k)
-- 💥 **2022/23 Bear Market** (Interest rates: 0% → 5%, Terra/FTX collapses)
-- 🔄 **2024/25 Recovery** (ETF approval, halving cycle)
-
-**🏛️ Real-World Validation**: Unlike toy backtests with "perfect" data, this simulation uses:
-- **FRED API**: Actual Federal Reserve interest rates and M2 money supply
-- **Dual Timeframe Analysis**: Long-term valuations + medium-term momentum
-- **No Look-Ahead Bias**: Decisions made only with data available at that moment
-
-### The Discipline Edge
-
-The +7.39% alpha wasn't from "timing the bottom perfectly." It came from **not panicking**:
-- When BTC crashed 77% in 2022, the bot stayed rational (math, not emotion)
-- When rates spiked to 5%, the strategy adapted (not frozen in fear)
-- When greed peaked in Nov 2021, valuation metrics prevented buying the top
-
-**This is the compounding power of consistency.**
+| **Test Period** | Jan 2021 - Nov 2025 | 4+ Years | **Full Cycle+** |
 
 ---
 
