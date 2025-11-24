@@ -4,7 +4,6 @@ from pathlib import Path
 import json
 from datetime import datetime
 
-# Add project root to python path
 project_root = str(Path(__file__).parent.parent)
 sys.path.append(project_root)
 
@@ -14,8 +13,7 @@ from src.execution.accounting import AccountingSystem
 
 def run_daily_paper_trading():
     print("🚀 Starting Daily Paper Trading Routine...")
-    
-    # 1. Load Latest Processed Data
+
     import glob
     list_of_files = glob.glob('data/processed/*.json') 
     if not list_of_files:
@@ -30,23 +28,20 @@ def run_daily_paper_trading():
         
     current_price = data["market_data"]["current_price"]
     date_str = data["timestamp"][:10]
-    
-    # 2. Calculate Scores
+
     scorer = QuantScorer()
     analysis = scorer.calculate_scores(data)
     scores = analysis["scores"]
     
     print(f"📊 Scores -> LT: {scores['long_term']['value']} | MT: {scores['medium_term']['value']}")
     
-    # 3. Load Accounting System
+
     accounting = AccountingSystem()
-    # Initialize if needed (will set $1000 Cash + $1000 BTC)
     if accounting.state is None:
         accounting.initialize(current_price)
         
     state = accounting.get_state()
     
-    # 4. Calculate Order
     pm = PortfolioManager()
     order = pm.calculate_order(
         scores=scores,
@@ -54,18 +49,15 @@ def run_daily_paper_trading():
         current_btc_value=state["btc_amount"] * current_price,
         current_debt=state["debt"]
     )
-    
-    # 5. Execute Order
+
     if order:
         print(f"⚡ Executing Order: {order.side} ${order.amount_usd:.2f} ({order.reason})")
         accounting.execute_order(order.side, order.amount_usd, current_price)
     else:
         print("💤 No trade needed (Allocation within thresholds).")
         
-    # 6. Daily Update (Interest & Snapshot)
     snapshot = accounting.update_daily(current_price, date_str)
     
-    # 7. Report
     report = accounting.generate_report()
     print(report)
     
