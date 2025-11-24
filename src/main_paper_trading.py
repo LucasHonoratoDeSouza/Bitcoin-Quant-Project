@@ -29,9 +29,29 @@ def run_daily_paper_trading():
     current_price = data["market_data"]["current_price"]
     date_str = data["timestamp"][:10]
 
+    # 4. Calculate Scores
     scorer = QuantScorer()
     analysis = scorer.calculate_scores(data)
     scores = analysis["scores"]
+    
+    lt_score = scores["long_term"]["value"]
+    mt_score = scores["medium_term"]["value"]
+    
+    # --- LOG SCORES TO CSV ---
+    signals_dir = "data/signals"
+    os.makedirs(signals_dir, exist_ok=True)
+    csv_path = os.path.join(signals_dir, "score_history.csv")
+    
+    file_exists = os.path.isfile(csv_path)
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    
+    with open(csv_path, "a") as f:
+        if not file_exists:
+            f.write("Date,Long_Term_Score,Medium_Term_Score\n")
+        f.write(f"{current_date},{lt_score:.2f},{mt_score:.2f}\n")
+    
+    print(f"📝 Scores logged to {csv_path}")
+    # -------------------------
     
     print(f"📊 Scores -> LT: {scores['long_term']['value']} | MT: {scores['medium_term']['value']}")
     
