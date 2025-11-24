@@ -48,7 +48,7 @@ Transparency is key. The system maintains a permanent, immutable record of every
 | **Current Equity** | `$1,999.27` | Updated Daily |
 | **Net Profit** | `$-0.73` | **-0.04%** |
 | **Avg. Monthly Return** | `TBD` | *Collecting data...* |
-| **Win Rate** | `100%` | 1 Trade Executed (Rebalance) |
+| **Win Rate** | `0.0%` | 0 Trades Executed |
 
 > **Status**: 🔴 **Active** & **Drawdown** (Capital Preserved).
 > *The system is currently in "Forward Testing" mode to validate the Backtest results in real-time market conditions.*

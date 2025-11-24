@@ -166,6 +166,70 @@ class AccountingSystem:
 """
         return report
 
+    def _calculate_win_rate(self):
+        """
+        Calculates Win Rate based on closed trades in order_book.csv.
+        A 'Closed Trade' is defined as a SELL order that realizes profit/loss.
+        """
+        csv_file = "data/accounting/order_book.csv"
+        if not os.path.exists(csv_file):
+            return 0.0, 0
+            
+        wins = 0
+        losses = 0
+        total_trades = 0
+        
+        # Simple FIFO logic to track PnL
+        # Queue of [price, amount] for buys
+        inventory = [] 
+        
+        try:
+            with open(csv_file, "r") as f:
+                lines = f.readlines()[1:] # Skip header
+                
+            for line in lines:
+                parts = line.strip().split(",")
+                if len(parts) < 5: continue
+                
+                side = parts[1]
+                price = float(parts[3])
+                amount_btc = float(parts[4])
+                
+                if side == "BUY":
+                    inventory.append({"price": price, "amount": amount_btc})
+                elif side == "SELL":
+                    # Match against inventory (FIFO)
+                    sold_amount = amount_btc
+                    cost_basis = 0.0
+                    matched_amount = 0.0
+                    
+                    while sold_amount > 0 and inventory:
+                        batch = inventory[0]
+                        take = min(batch["amount"], sold_amount)
+                        
+                        cost_basis += take * batch["price"]
+                        matched_amount += take
+                        sold_amount -= take
+                        batch["amount"] -= take
+                        
+                        if batch["amount"] <= 1e-9: # Floating point tolerance
+                            inventory.pop(0)
+                            
+                    if matched_amount > 0:
+                        revenue = matched_amount * price
+                        profit = revenue - cost_basis
+                        
+                        if profit > 0: wins += 1
+                        else: losses += 1
+                        total_trades += 1
+                        
+            if total_trades == 0: return 0.0, 0
+            return (wins / total_trades) * 100, total_trades
+            
+        except Exception as e:
+            print(f"⚠️ Error calculating Win Rate: {e}")
+            return 0.0, 0
+
     def update_readme(self):
         """
         Updates the 'Live Paper Trading' section in README.md with the latest stats.
@@ -184,8 +248,9 @@ class AccountingSystem:
         profit = current - initial
         roi = (profit / initial) * 100
         
-        # Calculate Win Rate (Simple version: Profitable Trades / Total Trades)
-        # For now, we just track if Equity > Initial as "Winning"
+        # Calculate Real Win Rate
+        win_rate, trade_count = self._calculate_win_rate()
+        
         status_icon = "🟢" if profit >= 0 else "🔴"
         status_text = "Profitable" if profit >= 0 else "Drawdown"
         
@@ -193,9 +258,6 @@ class AccountingSystem:
         with open(readme_path, "r") as f:
             content = f.read()
             
-        # Update Table Rows using Regex or simple string replacement if format is strict
-        # We'll use a robust string replacement for the specific lines
-        
         import re
         
         # Update Current Equity
@@ -212,8 +274,15 @@ class AccountingSystem:
             content
         )
         
+        # Update Win Rate
+        # | **Win Rate** | `100%` | 1 Trade Executed (Rebalance) |
+        content = re.sub(
+            r"\| \*\*Win Rate\*\* \| `[\d\.]+%` \| .* \|",
+            f"| **Win Rate** | `{win_rate:.1f}%` | {trade_count} Trades Executed |",
+            content
+        )
+        
         # Update Status Quote
-        # > **Status**: 🟢 **Active** & **Profitable** (Capital Preserved).
         content = re.sub(
             r"> \*\*Status\*\*: .*",
             f"> **Status**: {status_icon} **Active** & **{status_text}** (Capital Preserved).",
