@@ -34,6 +34,7 @@ class AccountingSystem:
             "btc_amount": initial_btc_amount,
             "debt": 0.0,
             "initial_capital": initial_cash + initial_btc_value,
+            "last_trade_date": None,
             "history": []
         }
         self._save_state()
@@ -107,7 +108,9 @@ class AccountingSystem:
                 self.state["debt"] -= repay_amount
                 self.state["cash"] -= repay_amount
 
-        self._log_order_csv(side, amount_usd, price, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.state["last_trade_date"] = date_str
+        self._log_order_csv(side, amount_usd, price, date_str)
         self._save_state()
 
     def _log_order_csv(self, side, amount_usd, price, date_str):

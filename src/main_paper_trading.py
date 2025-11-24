@@ -43,11 +43,18 @@ def run_daily_paper_trading():
     state = accounting.get_state()
     
     pm = PortfolioManager()
+    
+    # Retrieve last_trade_date and current_date for order calculation
+    last_trade_date = state.get("last_trade_date")
+    current_date = datetime.now().strftime("%Y-%m-%d")
+
     order = pm.calculate_order(
         scores=scores,
         current_cash=state["cash"],
         current_btc_value=state["btc_amount"] * current_price,
-        current_debt=state["debt"]
+        current_debt=state["debt"],
+        last_trade_date=last_trade_date,
+        current_date=current_date
     )
 
     if order:
