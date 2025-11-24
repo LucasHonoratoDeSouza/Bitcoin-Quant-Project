@@ -4,26 +4,15 @@ import math
 from datetime import datetime
 
 class QuantScorer:
-    """
-    Advanced Quantitative Scoring Engine.
-    Uses normalized z-scores, sigmoid activation functions, and dynamic regime weighting
-    to generate precise Long-Term and Medium-Term signals.
-    """
     
     def __init__(self):
         pass
 
     def _sigmoid(self, x, k=1.0):
-        """
-        Sigmoid activation function to squash values between -1 and 1.
-        k controls the steepness.
-        """
+
         return 2 / (1 + math.exp(-k * x)) - 1
 
     def _normalize(self, value, min_val, max_val, invert=False):
-        """
-        Normalizes a value to a -1.0 to 1.0 range based on historical bounds.
-        """
         if value is None: return 0.0
         
         # Clamp value
@@ -47,35 +36,25 @@ class QuantScorer:
         metrics = data.get("metrics", {})
         cycle = data.get("market_cycle_phase", "Unknown")
         
-        # 1. On-Chain Valuation (Continuous)
-        # MVRV: Low (0.8) is Buy, High (3.5) is Sell.
         mvrv_score = self._normalize(metrics.get("mvrv"), 0.8, 3.5, invert=True)
         
-        # Mayer Multiple: Low (0.6) is Buy, High (2.4) is Sell.
         mm_score = self._normalize(metrics.get("mayer_multiple"), 0.6, 2.4, invert=True)
-        
-        # RUP: Low (0.0) is Buy, High (5.0) is Sell. (Assuming RUP scale)
-        rup_score = self._normalize(metrics.get("rup"), 0.0, 5.0, invert=True)
+
+        rup_score = self._normalize(metrics.get("rup"), 0.0, 3.0, invert=True)
         
         onchain_score = (mvrv_score * 0.4) + (mm_score * 0.3) + (rup_score * 0.3)
-        
-        # 2. Macro Liquidity (Continuous)
-        # M2 YoY: < 0% is Bad (-1), > 10% is Good (+1)
+
         m2_score = self._normalize(metrics.get("m2_yoy"), 0.0, 10.0)
-        
-        # Interest Rate: < 2% is Good (+1), > 5% is Bad (-1)
+
         ir_score = self._normalize(metrics.get("interest_rate"), 2.0, 5.0, invert=True)
         
         macro_score = (m2_score * 0.6) + (ir_score * 0.4)
-        
-        # 3. Cycle Bias (Discrete Step Function)
+
         cycle_score = 0.0
         if cycle in ["Accumulation", "Pre-Halving Rally"]: cycle_score = 0.8
         elif cycle == "Post-Halving Expansion": cycle_score = 0.4
         elif cycle == "Bear Market / Distribution": cycle_score = -0.8
-        
-        # Weighted Sum for Long Term
-        # On-Chain is the truth (50%), Cycle is the map (30%), Macro is the weather (20%)
+
         final_lt = (onchain_score * 0.50) + (cycle_score * 0.30) + (macro_score * 0.20)
         
         return {
@@ -88,20 +67,14 @@ class QuantScorer:
         }
 
     def _calc_medium_term_quant(self, data: dict) -> dict:
-        """
-        Calculates Medium Term Score using continuous functions.
-        """
+
         metrics = data.get("metrics", {})
         market = data.get("market_data", {})
         flags = data.get("flags", {})
-        
-        # 1. Sentiment (Fear & Greed)
-        # 10 is Buy (+1), 90 is Sell (-1)
+
         fng = metrics.get("fear_and_greed")
         fng_score = self._normalize(fng, 10, 90, invert=True)
-        
-        # 2. Trend Extension (Price vs EMA)
-        # -30% is Buy (+1), +100% is Sell (-1)
+
         ext_pct = market.get("price_vs_ema_pct")
         trend_ext_score = self._normalize(ext_pct, -30, 100, invert=True)
         
@@ -117,7 +90,7 @@ class QuantScorer:
         
         # Weighted Sum for Medium Term
         # Sentiment (40%), Trend Extension (30%), Trend Direction (20%), Seasonality (10%)
-        final_mt = (fng_score * 0.40) + (trend_ext_score * 0.30) + (trend_dir * 0.20) + (season_score * 0.10)
+        final_mt = (fng_score * 0.40) + (trend_ext_score * 0.30) + (trend_dir * 0.25) + (season_score * 0.05)
         
         return {
             "score": round(final_mt * 100, 2),
