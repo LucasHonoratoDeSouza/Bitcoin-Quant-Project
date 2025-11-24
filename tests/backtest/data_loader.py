@@ -23,6 +23,27 @@ class BacktestDataLoader:
             self.data.columns = self.data.columns.get_level_values(0)
             
         self.data = self.data.rename(columns={"Close": "price", "High": "high", "Low": "low", "Open": "open", "Volume": "volume"})
+        
+        # --- FETCH REAL MACRO DATA ---
+        from tests.backtest.get_real_data import RealDataFetcher
+        fetcher = RealDataFetcher()
+        macro_df = fetcher.fetch_macro_data(self.start_date, self.end_date)
+        
+        if macro_df is not None:
+            # Merge Macro Data (Left Join on Date)
+            # Ensure index is datetime
+            self.data.index = pd.to_datetime(self.data.index).tz_localize(None)
+            macro_df.index = pd.to_datetime(macro_df.index).tz_localize(None)
+            
+            self.data = self.data.join(macro_df, how="left")
+            # Forward fill macro data (since it's daily/monthly vs 24/7 crypto)
+            self.data["interest_rate"] = self.data["interest_rate"].ffill()
+            self.data["m2_yoy"] = self.data["m2_yoy"].ffill()
+        else:
+            print("⚠️ Using Synthetic Macro Data (Neutral).")
+            self.data["interest_rate"] = 2.5
+            self.data["m2_yoy"] = 5.0
+            
         self._calculate_synthetic_indicators()
         return self.data
 
@@ -52,12 +73,11 @@ class BacktestDataLoader:
         # Simple proxy: RSI is the main driver for F&G in this sim
         df["fear_and_greed"] = df["rsi"] 
         
-        # 4. Macro Proxy (Yield 10Y - simplified constant or random walk if needed, 
-        # but for now we assume neutral macro to test alpha of crypto logic, 
-        # or we can fetch ^TNX if we want)
-        # Let's assume neutral macro (0.0 score) to isolate crypto strategy performance
-        df["interest_rate"] = 2.5 # Neutral
-        df["m2_yoy"] = 5.0 # Neutral
+        # 4. Macro Proxy (If not already fetched)
+        if "interest_rate" not in df.columns:
+            df["interest_rate"] = 2.5 # Neutral
+        if "m2_yoy" not in df.columns:
+            df["m2_yoy"] = 5.0 # Neutral
         
         # 5. Cycle Phase
         # Hardcoded Halving Dates
@@ -101,13 +121,13 @@ class BacktestDataLoader:
         for date, row in self.data.iterrows():
             # Construct the 'metrics' dict expected by QuantScorer
             metrics = {
-                "mvrv": row["mvrv_proxy"], # Using proxy
+                "mvrv": row["mvrv_proxy"], # Still using proxy for MVRV (ChainExposed requires scraping)
                 "mayer_multiple": row["mayer_multiple"],
                 "rup": row["mvrv_proxy"] * 0.5, # Rough proxy for RUP
                 "sopr": 1.0, # Hard to simulate without UTXO set, assume neutral
                 "fear_and_greed": row["fear_and_greed"],
-                "interest_rate": row["interest_rate"],
-                "m2_yoy": row["m2_yoy"],
+                "interest_rate": row["interest_rate"], # REAL DATA
+                "m2_yoy": row["m2_yoy"], # REAL DATA
                 "inflation": {"yoy_inflation_pct": 2.0}, # Neutral
                 "derivatives": {"funding_rate": 0.01} # Neutral
             }

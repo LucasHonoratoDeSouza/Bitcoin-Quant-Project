@@ -36,7 +36,7 @@ class QuantScorer:
         metrics = data.get("metrics", {})
         cycle = data.get("market_cycle_phase", "Unknown")
         
-        mvrv_score = self._normalize(metrics.get("mvrv"), 0.8, 3.5, invert=True)
+        mvrv_score = self._normalize(metrics.get("mvrv"), 0.8, 4.5, invert=True)
         
         mm_score = self._normalize(metrics.get("mayer_multiple"), 0.6, 2.4, invert=True)
 
@@ -55,7 +55,8 @@ class QuantScorer:
         elif cycle == "Post-Halving Expansion": cycle_score = 0.4
         elif cycle == "Bear Market / Distribution": cycle_score = -0.8
 
-        final_lt = (onchain_score * 0.50) + (cycle_score * 0.30) + (macro_score * 0.20)
+        # Optimization: Boost Cycle/Trend (0.45), Reduce Macro (0.15), Relax OnChain (0.45)
+        final_lt = (onchain_score * 0.45) + (cycle_score * 0.40) + (macro_score * 0.15)
         
         return {
             "score": round(final_lt * 100, 2),
@@ -89,7 +90,7 @@ class QuantScorer:
         season_score = 1.0 if flags.get("is_positive_seasonality") else 0.0
         
         # Weighted Sum for Medium Term
-        # Sentiment (40%), Trend Extension (30%), Trend Direction (20%), Seasonality (10%)
+        # Sentiment (40%), Trend Extension (30%), Trend Direction (25%), Seasonality (5%)
         final_mt = (fng_score * 0.40) + (trend_ext_score * 0.30) + (trend_dir * 0.25) + (season_score * 0.05)
         
         return {

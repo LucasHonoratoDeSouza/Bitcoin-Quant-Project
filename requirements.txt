@@ -3,3 +3,5 @@ pandas
 requests
 python-dotenv
 yfinance
+fredapi
+pandas_datareader
