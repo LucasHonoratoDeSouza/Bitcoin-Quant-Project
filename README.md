@@ -46,7 +46,7 @@ Transparency is key. The system maintains a permanent, immutable record of every
 | :--- | :--- | :--- |
 | **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
 | **Current Equity** | `$2,001.85` | Updated Daily |
-| **Net Profit** | `$-0.73` | **-0.04%** |
+| **Net Profit** | `$1.85` | **0.09%** |
 | **Avg. Monthly Return** | `TBD` | *Collecting data...* |
 | **Win Rate** | `0.0%` | 0 Trades Executed |
 
