@@ -45,12 +45,12 @@ Transparency is key. The system maintains a permanent, immutable record of every
 | Metric | Value | Description |
 | :--- | :--- | :--- |
 | **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
-| **Current Equity** | `$1,999.27` | Updated Daily |
+| **Current Equity** | `$2,001.85` | Updated Daily |
 | **Net Profit** | `$-0.73` | **-0.04%** |
 | **Avg. Monthly Return** | `TBD` | *Collecting data...* |
 | **Win Rate** | `0.0%` | 0 Trades Executed |
 
-> **Status**: 🔴 **Active** & **Drawdown** (Capital Preserved).
+> **Status**: 🟢 **Active** & **Profitable** (Capital Preserved).
 > *The system is currently in "Forward Testing" mode to validate the Backtest results in real-time market conditions.*
 
 ---
