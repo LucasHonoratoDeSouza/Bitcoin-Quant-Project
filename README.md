@@ -45,8 +45,13 @@ Transparency is key. The system maintains a permanent, immutable record of every
 | Metric | Value | Description |
 | :--- | :--- | :--- |
 | **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
+<<<<<<< HEAD
 | **Current Equity** | `$2,002.53` | Updated Daily |
 | **Net Profit** | `$-0.73` | **-0.04%** |
+=======
+| **Current Equity** | `$2,001.85` | Updated Daily |
+| **Net Profit** | `$1.85` | **0.09%** |
+>>>>>>> c4bb9c65405d9d08a0ec65dd7584938805e141ab
 | **Avg. Monthly Return** | `TBD` | *Collecting data...* |
 | **Win Rate** | `0.0%` | 0 Trades Executed |
 
@@ -77,7 +82,7 @@ Transparency is key. The system maintains a permanent, immutable record of every
 *   [x] Paper Trading Ecosystem.
 
 ### Phase 2: Intelligence (In Progress) 🚧
-*   [ ] **LLM Integration (The "AI Consultant")**: Integrating Large Language Models (like GPT-4/Gemini) to read the quantitative reports and explain *why* a decision was made in plain English.
+*   [ ] **LLM Integration (The "AI Consultant")**: Integrating Large Language Models (like GPT-5/Gemini).
 *   [ ] **News Sentiment Analysis**: Real-time scanning of global news to detect black swan events.
 
 ### Phase 3: Real-Time Defense 🛡️
