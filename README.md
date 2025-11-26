@@ -77,7 +77,7 @@ Transparency is key. The system maintains a permanent, immutable record of every
 *   [x] Paper Trading Ecosystem.
 
 ### Phase 2: Intelligence (In Progress) 🚧
-*   [ ] **LLM Integration (The "AI Consultant")**: Integrating Large Language Models (like GPT-4/Gemini) to read the quantitative reports and explain *why* a decision was made in plain English.
+*   [ ] **LLM Integration (The "AI Consultant")**: Integrating Large Language Models (like GPT-5/Gemini).
 *   [ ] **News Sentiment Analysis**: Real-time scanning of global news to detect black swan events.
 
 ### Phase 3: Real-Time Defense 🛡️
