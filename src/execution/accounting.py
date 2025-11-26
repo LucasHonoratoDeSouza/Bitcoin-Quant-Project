@@ -230,6 +230,38 @@ class AccountingSystem:
             print(f"⚠️ Error calculating Win Rate: {e}")
             return 0.0, 0
 
+    def _calculate_monthly_return(self):
+        """
+        Calculates projected Monthly Return based on historical performance.
+        Uses (1 + total_roi)^(30/days) - 1
+        """
+        if not self.state or not self.state["history"]:
+            return None
+            
+        first_entry = self.state["history"][0]
+        last_entry = self.state["history"][-1]
+        
+        start_date = datetime.strptime(first_entry["date"], "%Y-%m-%d")
+        end_date = datetime.strptime(last_entry["date"], "%Y-%m-%d")
+        
+        days_passed = (end_date - start_date).days
+        
+        if days_passed < 1:
+            return None
+            
+        initial_equity = self.state["initial_capital"]
+        current_equity = last_entry["equity"]
+        
+        total_return = (current_equity - initial_equity) / initial_equity
+        
+        # Projected Monthly Return
+        # (1 + r_total) ^ (30 / days) - 1
+        try:
+            monthly_return = ((1 + total_return) ** (30 / days_passed)) - 1
+            return monthly_return * 100
+        except:
+            return 0.0
+
     def update_readme(self):
         """
         Updates the 'Live Paper Trading' section in README.md with the latest stats.
@@ -253,6 +285,11 @@ class AccountingSystem:
         
         status_icon = "🟢" if profit >= 0 else "🔴"
         status_text = "Profitable" if profit >= 0 else "Drawdown"
+        
+        # Calculate Monthly Return
+        monthly_return = self._calculate_monthly_return()
+        monthly_str = f"{monthly_return:+.2f}%" if monthly_return is not None else "TBD"
+        monthly_desc = "Projected (30-day)" if monthly_return is not None else "*Collecting data...*"
         
         # Read README
         with open(readme_path, "r") as f:
@@ -279,6 +316,13 @@ class AccountingSystem:
         content = re.sub(
             r"\| \*\*Win Rate\*\* \| `[\d\.]+%` \| .* \|",
             f"| **Win Rate** | `{win_rate:.1f}%` | {trade_count} Trades Executed |",
+            content
+        )
+        
+        # Update Avg. Monthly Return
+        content = re.sub(
+            r"\| \*\*Avg\. Monthly Return\*\* \| `.*` \| .* \|",
+            f"| **Avg. Monthly Return** | `{monthly_str}` | {monthly_desc} |",
             content
         )
         
