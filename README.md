@@ -45,9 +45,9 @@ Transparency is key. The system maintains a permanent, immutable record of every
 | Metric | Value | Description |
 | :--- | :--- | :--- |
 | **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
-| **Current Equity** | `$2,002.53` | Updated Daily |
-| **Net Profit** | `$2.53` | **+0.13%** |
-| **Avg. Monthly Return** | `+1.27%` | Projected (30-day) |
+| **Current Equity** | `$2,011.03` | Updated Daily |
+| **Net Profit** | `$11.03` | **+0.55%** |
+| **Avg. Monthly Return** | `+4.21%` | Projected (30-day) |
 | **Win Rate** | `0.0%` | 0 Trades Executed |
 
 > **Status**: 🟢 **Active** & **Profitable** (Capital Preserved).
