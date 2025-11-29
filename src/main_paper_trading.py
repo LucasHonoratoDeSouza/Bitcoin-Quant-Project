@@ -50,10 +50,10 @@ def run_daily_paper_trading():
             f.write("Date,Long_Term_Score,Medium_Term_Score\n")
         f.write(f"{current_date},{lt_score:.2f},{mt_score:.2f}\n")
     
-    print(f"📝 Scores logged to {csv_path}")
+    print(f"Scores logged to {csv_path}")
     # -------------------------
     
-    print(f"📊 Scores -> LT: {scores['long_term']['value']} | MT: {scores['medium_term']['value']}")
+    print(f"Scores -> LT: {scores['long_term']['value']} | MT: {scores['medium_term']['value']}")
     
 
     accounting = AccountingSystem()
