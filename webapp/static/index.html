@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Quant Terminal</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+
+<body>
+    <!-- Top Bar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <div class="terminal-title">
+                <span class="terminal-icon">₿</span>
+                <span class="terminal-name">QUANT TERMINAL</span>
+            </div>
+            <div class="terminal-status">
+                <span class="status-dot"></span>
+                <span class="status-text">LIVE PAPER TRADING</span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="topbar-stat">
+                <span class="topbar-label">BTC/USD</span>
+                <span class="topbar-value" id="header-price">$0.00</span>
+            </div>
+            <div class="topbar-stat">
+                <span class="topbar-label">EQUITY</span>
+                <span class="topbar-value" id="header-equity">$0.00</span>
+            </div>
+            <div class="topbar-stat">
+                <span class="topbar-label">ROI</span>
+                <span class="topbar-value" id="header-roi">0.00%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Terminal Grid -->
+    <div class="terminal-grid">
+        <!-- Left Panel: Metrics & Trades -->
+        <div class="terminal-panel panel-left">
+            <!-- Performance Section -->
+            <div class="panel-section">
+                <div class="panel-header">
+                    <span class="panel-title">PERFORMANCE</span>
+                </div>
+                <div class="panel-content">
+                    <div class="metric-row">
+                        <div class="metric-item">
+                            <div class="metric-label">TOTAL RETURN</div>
+                            <div class="metric-value" id="metric-return">+0.00%</div>
+                            <div class="metric-sub" id="metric-return-sub">vs B&H: +0.00%</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">ALPHA</div>
+                            <div class="metric-value" id="metric-alpha">0.00%</div>
+                            <div class="metric-sub" id="metric-alpha-badge">—</div>
+                        </div>
+                    </div>
+                    <div class="metric-row">
+                        <div class="metric-item">
+                            <div class="metric-label">MAX DRAWDOWN</div>
+                            <div class="metric-value" id="metric-dd">0.00%</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">SHARPE RATIO</div>
+                            <div class="metric-value" id="metric-sharpe">0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Section -->
+            <div class="panel-section">
+                <div class="panel-header">
+                    <span class="panel-title">PORTFOLIO STATE</span>
+                </div>
+                <div class="panel-content">
+                    <div class="metric-row">
+                        <div class="metric-item">
+                            <div class="metric-label">CASH BALANCE</div>
+                            <div class="metric-value" id="metric-cash">$0.00</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">BTC HOLDINGS</div>
+                            <div class="metric-value" id="metric-btc">0.00000000</div>
+                        </div>
+                    </div>
+                    <div class="metric-row">
+                        <div class="metric-item">
+                            <div class="metric-label">TOTAL TRADES</div>
+                            <div class="metric-value" id="metric-trades">0</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">MARKET PHASE</div>
+                            <div class="metric-value" id="metric-phase">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Trades Section (New) -->
+            <div class="panel-section flex-grow">
+                <div class="panel-header">
+                    <span class="panel-title">RECENT TRADES</span>
+                </div>
+                <div class="panel-content no-padding">
+                    <table class="trades-table">
+                        <thead>
+                            <tr>
+                                <th>DATE</th>
+                                <th>SIDE</th>
+                                <th>PRICE</th>
+                                <th>AMT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trades-list">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Charts -->
+        <div class="terminal-panel panel-center">
+            <!-- Top Chart: Price + Scores -->
+            <div class="chart-section main-chart">
+                <div class="panel-header">
+                    <span class="panel-title">BTC/USD + SIGNAL OVERLAY</span>
+                    <div class="panel-controls">
+                        <span class="control-label">LT:</span>
+                        <span class="control-value" id="control-lt">0.0</span>
+                        <span class="control-label">MT:</span>
+                        <span class="control-value" id="control-mt">0.0</span>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Bottom Chart: Performance -->
+            <div class="chart-section sub-chart">
+                <div class="panel-header">
+                    <span class="panel-title">STRATEGY EQUITY vs BUY & HOLD</span>
+                </div>
+                <div class="panel-content">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Signals & Allocation -->
+        <div class="terminal-panel panel-right">
+            <!-- Signal Scores -->
+            <div class="panel-section">
+                <div class="panel-header">
+                    <span class="panel-title">QUANT SCORES</span>
+                </div>
+                <div class="panel-content">
+                    <div class="score-display">
+                        <div class="score-label">LONG-TERM</div>
+                        <div class="score-value" id="score-lt-display">0.00</div>
+                        <div class="score-bar-container">
+                            <div class="score-bar-bg">
+                                <div class="score-bar-fill" id="score-lt-bar" style="width: 50%"></div>
+                            </div>
+                            <div class="score-range">
+                                <span>-100</span>
+                                <span>0</span>
+                                <span>+100</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="score-display">
+                        <div class="score-label">MEDIUM-TERM</div>
+                        <div class="score-value" id="score-mt-display">0.00</div>
+                        <div class="score-bar-container">
+                            <div class="score-bar-bg">
+                                <div class="score-bar-fill" id="score-mt-bar" style="width: 50%"></div>
+                            </div>
+                            <div class="score-range">
+                                <span>-100</span>
+                                <span>0</span>
+                                <span>+100</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Score History -->
+            <div class="panel-section">
+                <div class="panel-header">
+                    <span class="panel-title">SCORE HISTORY (7D)</span>
+                </div>
+                <div class="panel-content">
+                    <div class="score-history-container">
+                        <canvas id="scoreHistoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Allocation (Corner) -->
+            <div class="panel-section flex-grow">
+                <div class="panel-header">
+                    <span class="panel-title">ASSET ALLOCATION</span>
+                </div>
+                <div class="panel-content">
+                    <div class="allocation-container">
+                        <canvas id="portfolioChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+
+</html>
