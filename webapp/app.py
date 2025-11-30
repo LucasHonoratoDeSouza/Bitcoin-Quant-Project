@@ -79,12 +79,12 @@ def get_paper_trading_history():
         scores_df['Date'] = pd.to_datetime(scores_df['Date'])
         scores_df = scores_df[scores_df['Date'] >= PAPER_TRADING_START]
         
-        # Merge reports with scores
+        # Merge reports with scores (use LAST entry if multiple scores per date)
         for report in reports:
             matching_score = scores_df[scores_df['Date'] == report['date']]
             if not matching_score.empty:
-                report['lt_score'] = float(matching_score.iloc[0]['Long_Term_Score'])
-                report['mt_score'] = float(matching_score.iloc[0]['Medium_Term_Score'])
+                report['lt_score'] = float(matching_score.iloc[-1]['Long_Term_Score'])
+                report['mt_score'] = float(matching_score.iloc[-1]['Medium_Term_Score'])
             else:
                 report['lt_score'] = 0
                 report['mt_score'] = 0

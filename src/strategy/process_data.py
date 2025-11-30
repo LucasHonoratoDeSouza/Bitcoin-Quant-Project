@@ -1,8 +1,11 @@
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+import yfinance as yf
+import pandas as pd
+import numpy as np
 
 # Add project root to python path
 project_root = str(Path(__file__).parent.parent.parent)
@@ -10,6 +13,47 @@ sys.path.append(project_root)
 
 from src.features.cycle import BitcoinCycle
 from src.features.seasonality import BitcoinSeasonality
+
+# --- Helper Functions ---
+
+def fetch_historical_context(end_date_str, window_days=1460):
+    """
+    Fetches historical BTC price data to calculate long-term rolling metrics (Z-Score).
+    """
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+    start_date = end_date - timedelta(days=window_days + 365) # Buffer for MA calculation
+    
+    print(f"Fetching historical context from {start_date.strftime('%Y-%m-%d')} to {end_date_str}...")
+    
+    try:
+        df = yf.download("BTC-USD", start=start_date.strftime('%Y-%m-%d'), end=end_date_str, progress=False)
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+        
+        df = df.rename(columns={"Close": "price"})
+        
+        # Calculate MVRV Proxy (Price / 365 SMA)
+        df['sma_365'] = df['price'].rolling(window=365).mean()
+        df['mvrv_proxy'] = df['price'] / df['sma_365']
+        
+        # Calculate Z-Score (4-year window)
+        # We use the last available value as the current Z-Score
+        rolling_mean = df['mvrv_proxy'].rolling(window=window_days, min_periods=365).mean()
+        rolling_std = df['mvrv_proxy'].rolling(window=window_days, min_periods=365).std()
+        
+        df['mvrv_zscore'] = (df['mvrv_proxy'] - rolling_mean) / rolling_std
+        
+        last_z = df['mvrv_zscore'].iloc[-1]
+        
+        if pd.isna(last_z):
+            print("⚠️ Warning: Z-Score is NaN (insufficient history?). Defaulting to 0.")
+            return 0.0
+            
+        return float(last_z)
+        
+    except Exception as e:
+        print(f"❌ Error fetching historical context: {e}")
+        return 0.0
 
 # --- Logic Functions ---
 
@@ -184,12 +228,19 @@ def process_daily_data(raw_file_path):
     with open(raw_file_path, "r") as f:
         raw_data = json.load(f)
         
+    # 0. Fetch Historical Context for Z-Score
+    # We need the date from the timestamp
+    date_str = raw_data["timestamp"][:10]
+    z_score = fetch_historical_context(date_str)
+    print(f"📊 Calculated MVRV Z-Score: {z_score:.2f}")
+
     processed = {
         "timestamp": raw_data["timestamp"],
         "raw_source": raw_file_path,
         "market_data": get_market_context(raw_data),
         "metrics": {
             "mvrv": raw_data["metrics"].get("mvrv"),
+            "mvrv_zscore": z_score, # NEW: Dynamic Metric
             "sopr": raw_data["metrics"].get("sopr"),
             "rup": raw_data["metrics"].get("rup"),
             "mayer_multiple": raw_data["metrics"].get("mayer_multiple"),

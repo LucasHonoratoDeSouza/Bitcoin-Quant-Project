@@ -1,0 +1,55 @@
+{
+    "timestamp": "2025-11-30T11:18:08.070264",
+    "metrics": {
+        "btc_price_ema_365": {
+            "current_price": 91665.65134246375,
+            "ema_365": 103994.29570456136,
+            "daily_change_pct": 0.9072936826759516,
+            "weekly_change_pct": 5.6252445647737,
+            "monthly_change_pct": -16.34353920571667
+        },
+        "interest_rate": {
+            "current_rate": 4.09,
+            "monthly_change_pct": -3.0805687203791448,
+            "yearly_change_pct": -15.320910973084889
+        },
+        "m2_supply": {
+            "m2_monthly_pct": 0.3853685987619482,
+            "m2_quarter_pct": 1.2224905578152256,
+            "m2_year_pct": 4.646120489391348
+        },
+        "mvrv": 1.6555000496447894,
+        "mvrv_crosses": [
+            0.8370218973488189,
+            2.3377877706459254
+        ],
+        "mayer_multiple": 0.8308979910294623,
+        "rup": 0.6322209895314291,
+        "sopr": 1.0959073512005897,
+        "dollar_strength": {
+            "current_index": 122.235,
+            "monthly_change_pct": 0.7691546718108462
+        },
+        "inflation": {
+            "current_cpi": 324.368,
+            "yoy_inflation_pct": 3.0226996261723786,
+            "prev_yoy_inflation_pct": 2.9392196249335485,
+            "inflation_trend": 0.08348000123883015
+        },
+        "derivatives": {
+            "open_interest": 90628.808,
+            "long_short_ratio": null,
+            "funding_rate": 1.599e-05,
+            "basis_pct": -0.04401134411406072
+        },
+        "fear_and_greed": {
+            "value": 28,
+            "classification": "Fear",
+            "timestamp": 1764460800
+        },
+        "macro_correlations": {
+            "corr_spx_90d": 0.47432618848421987,
+            "corr_gold_90d": 0.19989214736120123
+        }
+    }
+}

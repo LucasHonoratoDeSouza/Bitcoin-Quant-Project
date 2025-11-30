@@ -36,7 +36,11 @@ class QuantScorer:
         metrics = data.get("metrics", {})
         cycle = data.get("market_cycle_phase", "Unknown")
         
-        mvrv_score = self._normalize(metrics.get("mvrv"), 0.8, 4.5, invert=True)
+        # MVRV Z-Score Logic (Adaptive)
+        # Z-Score < -1.2 is Extremely Undervalued (+1.0)
+        # Z-Score > 2.5 is Extremely Overvalued (-1.0)
+        z_score = metrics.get("mvrv_zscore", 0.0)
+        mvrv_score = self._normalize(z_score, -1.2, 2.5, invert=True)
         
         mm_score = self._normalize(metrics.get("mayer_multiple"), 0.6, 2.4, invert=True)
 
@@ -89,9 +93,10 @@ class QuantScorer:
         # 4. Seasonality (Discrete)
         season_score = 1.0 if flags.get("is_positive_seasonality") else 0.0
         
-        # Weighted Sum for Medium Term
-        # Sentiment (40%), Trend Extension (30%), Trend Direction (25%), Seasonality (5%)
-        final_mt = (fng_score * 0.40) + (trend_ext_score * 0.30) + (trend_dir * 0.25) + (season_score * 0.05)
+        # Weighted Sum for Medium Term (Trend Following Strategy)
+        # Research showed Trend Following (60%) significantly outperforms Mean Reversion.
+        # Trend Direction (60%), Sentiment (20%), Trend Extension (15%), Seasonality (5%)
+        final_mt = (trend_dir * 0.60) + (fng_score * 0.20) + (trend_ext_score * 0.15) + (season_score * 0.05)
         
         return {
             "score": round(final_mt * 100, 2),
