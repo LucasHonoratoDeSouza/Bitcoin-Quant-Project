@@ -4,11 +4,9 @@ from datetime import datetime
 from pathlib import Path
 import sys
 
-# Add project root to python path
 project_root = str(Path(__file__).parent.parent.parent)
 sys.path.append(project_root)
 
-# Import all data fetchers
 from src.data.get_data.EMA import get_ema
 from src.data.get_data.IR import get_interest_rate
 from src.data.get_data.GLI import get_m2_pct_changes
@@ -31,7 +29,6 @@ def download_all_data():
         "metrics": {}
     }
 
-    # List of fetchers and their keys
     fetchers = [
         ("btc_price_ema_365", get_ema),
         ("interest_rate", get_interest_rate),
@@ -53,12 +50,11 @@ def download_all_data():
             print(f"Fetching {key}...")
             result = func()
             data["metrics"][key] = result
-            print(f"✅ {key}: Success")
+            print(f"{key}: Success")
         except Exception as e:
-            print(f"❌ {key}: Failed - {e}")
+            print(f"{key}: Failed - {e}")
             data["metrics"][key] = None
 
-    # Save to file
     output_dir = Path("data/raw")
     output_dir.mkdir(parents=True, exist_ok=True)
     

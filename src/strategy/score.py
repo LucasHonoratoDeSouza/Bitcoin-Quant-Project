@@ -9,7 +9,6 @@ class QuantScorer:
         pass
 
     def _sigmoid(self, x, k=1.0):
-
         return 2 / (1 + math.exp(-k * x)) - 1
 
     def _normalize(self, value, min_val, max_val, invert=False):
@@ -30,9 +29,6 @@ class QuantScorer:
         return score
 
     def _calc_long_term_quant(self, data: dict) -> dict:
-        """
-        Calculates Long Term Score using continuous functions.
-        """
         metrics = data.get("metrics", {})
         cycle = data.get("market_cycle_phase", "Unknown")
         

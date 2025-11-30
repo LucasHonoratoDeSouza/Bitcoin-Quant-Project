@@ -8,10 +8,6 @@ load_dotenv()
 FRED_API_KEY = os.getenv("FRED_API_KEY")
 
 def get_inflation_data():
-    """
-    Returns CPI (Consumer Price Index) data: current value and YoY change.
-    Series: CPIAUCSL (Consumer Price Index for All Urban Consumers: All Items in U.S. City Average)
-    """
     if not FRED_API_KEY:
         raise ValueError("FRED_API_KEY not found in environment variables")
 
@@ -40,12 +36,10 @@ def get_inflation_data():
         return None
 
     current_cpi = df.iloc[-1]["value"]
-    
-    # Calculate YoY Inflation
+
     one_year_df = df[df["date"] == df.iloc[-1]["date"] - pd.DateOffset(years=1)]
     
     if one_year_df.empty:
-        # Fallback
         if len(df) >= 13:
             one_year_cpi = df.iloc[-13]["value"]
             yoy_inflation = ((current_cpi - one_year_cpi) / one_year_cpi) * 100
@@ -55,7 +49,6 @@ def get_inflation_data():
         one_year_cpi = one_year_df["value"].iloc[0]
         yoy_inflation = ((current_cpi - one_year_cpi) / one_year_cpi) * 100
 
-    # Calculate Previous Month YoY Inflation to see trend
     prev_cpi = df.iloc[-2]["value"]
     prev_year_df = df[df["date"] == df.iloc[-2]["date"] - pd.DateOffset(years=1)]
     

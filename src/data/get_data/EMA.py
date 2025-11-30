@@ -2,10 +2,6 @@ import requests
 import pandas as pd
 
 def get_ema():
-    """
-    Fetches 365 days of BTC prices from CoinGecko API and returns
-    the most recent 365-day EMA value.
-    """
     url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
     
     params = {

@@ -8,10 +8,6 @@ load_dotenv()
 FRED_API_KEY = os.getenv("FRED_API_KEY")
 
 def get_dollar_strength():
-    """
-    Returns Dollar Strength Index (Trade Weighted U.S. Dollar Index: Broad, Goods and Services).
-    Series: DTWEXBGS
-    """
     if not FRED_API_KEY:
         raise ValueError("FRED_API_KEY not found in environment variables")
 
@@ -41,7 +37,7 @@ def get_dollar_strength():
 
     current_index = df.iloc[-1]["value"]
     
-    # Calculate changes
+
     try:
         one_month = df[df["date"] <= df.iloc[-1]["date"] - pd.DateOffset(months=1)].iloc[-1]["value"]
         monthly_change = ((current_index - one_month) / one_month) * 100

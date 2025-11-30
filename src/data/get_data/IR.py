@@ -8,9 +8,6 @@ load_dotenv()
 FRED_API_KEY = os.getenv("FRED_API_KEY")
 
 def get_interest_rate():
-    """
-    Returns Fed Funds Rate (interest rate) levels and % changes.
-    """
     if not FRED_API_KEY:
         raise ValueError("FRED_API_KEY not found in environment variables")
 

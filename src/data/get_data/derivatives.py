@@ -2,12 +2,6 @@ import requests
 import pandas as pd
 
 def get_binance_derivatives():
-    """
-    Fetches derivatives data from Binance Futures API:
-    1. Open Interest (BTCUSDT)
-    2. Long/Short Ratio (Global Accounts)
-    3. Funding Rate (Proxy for Basis/Sentiment)
-    """
     base_url = "https://fapi.binance.com"
     symbol = "BTCUSDT"
     
@@ -17,7 +11,7 @@ def get_binance_derivatives():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
 
-    # 1. Open Interest
+
     try:
         url_oi = f"{base_url}/fapi/v1/openInterest"
         r_oi = requests.get(url_oi, params={"symbol": symbol}, headers=headers).json()
@@ -26,8 +20,6 @@ def get_binance_derivatives():
         print(f"Error fetching Open Interest: {e}")
         metrics["open_interest"] = None
 
-    # 2. Long/Short Ratio (Top Trader Account Ratio is often more reliable for API)
-    # Trying topLongShortAccountRatio first as global might be restricted
     metrics["long_short_ratio"] = None
     for period in ["5m", "1h", "1d"]:
         try:
@@ -48,15 +40,12 @@ def get_binance_derivatives():
     if metrics["long_short_ratio"] is None:
          print("Failed to fetch Long/Short Ratio after retries.")
 
-    # 3. Funding Rate & Basis (Premium Index)
     try:
         url_premium = f"{base_url}/fapi/v1/premiumIndex"
         r_premium = requests.get(url_premium, params={"symbol": symbol}, headers=headers).json()
-        
-        # Funding Rate
+
         metrics["funding_rate"] = float(r_premium["lastFundingRate"])
-        
-        # Basis calculation (Mark Price - Index Price)
+
         mark_price = float(r_premium["markPrice"])
         index_price = float(r_premium["indexPrice"])
         basis = (mark_price - index_price) / index_price
