@@ -33,8 +33,3 @@ This document outlines the step-by-step evolution of the trading bot, moving fro
 - [ ] **Monte Carlo Simulation:** Shuffle trade order 10,000 times to estimate probability of max drawdown.
 - [ ] **Parameter Stability Surface:** Visualize 3D surface of parameters. We want a "plateau" of good results, not a single "peak" (overfitting).
 
-## Phase 6: Portfolio Construction (The Architect)
-*Goal: Diversification beyond just "Long BTC".*
-- [ ] **Long/Short Strategy:** Ability to profit from downtrends (using Futures or Inverse ETFs).
-- [ ] **Cash Management:** Park idle cash in Yield protocols (e.g., Aave/Compound) or Short-Term Treasuries (BIL) when out of market.
-- [ ] **Multi-Asset:** Add ETH or SOL to the rotation based on Relative Strength (RS).
