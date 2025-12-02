@@ -1,12 +1,7 @@
 from datetime import datetime
 
 class BitcoinSeasonality:
-    """
-    Provides historical seasonality data for Bitcoin.
-    Based on average monthly returns (Approx. 2013-2023).
-    """
-    
-    # Average Monthly Returns % (Simplified for heuristic)
+
     MONTHLY_AVG = {
         1: 1.5,   # Jan: Mixed
         2: 12.0,  # Feb: Strong

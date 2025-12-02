@@ -4,10 +4,6 @@ from datetime import datetime
 from pathlib import Path
 
 class AccountingSystem:
-    """
-    Manages the persistent state of the Paper Trading Portfolio.
-    Tracks Cash, BTC, Debt, and Historical Performance.
-    """
     
     def __init__(self, state_file="data/accounting/portfolio_state.json"):
         self.state_file = state_file
@@ -18,12 +14,8 @@ class AccountingSystem:
             with open(self.state_file, "r") as f:
                 return json.load(f)
         else:
-            return None # Will be initialized on first update if needed
-
+            return None 
     def initialize(self, current_price):
-        """
-        Initializes the portfolio with $1000 Cash and $1000 worth of BTC.
-        """
         print("Initializing new Portfolio State...")
         initial_cash = 1000.0
         initial_btc_value = 1000.0
@@ -40,28 +32,19 @@ class AccountingSystem:
         self._save_state()
 
     def update_daily(self, current_price, date_str):
-        """
-        Updates the portfolio state for the day:
-        - Accrues Interest on Debt.
-        - Records Snapshot.
-        """
         if self.state is None:
             self.initialize(current_price)
-            
-        # 1. Accrue Interest (1% per month = 0.01 / 30 per day)
         daily_interest_rate = 0.01 / 30
         interest_cost = 0.0
         
         if self.state["debt"] > 0:
             interest_cost = self.state["debt"] * daily_interest_rate
-            self.state["debt"] += interest_cost # Add to debt pile
-            
-        # 2. Calculate Equity
+            self.state["debt"] += interest_cost 
+
         btc_value = self.state["btc_amount"] * current_price
         total_assets = self.state["cash"] + btc_value
         total_equity = total_assets - self.state["debt"]
         
-        # 3. Record History
         snapshot = {
             "date": date_str,
             "price": current_price,
@@ -84,12 +67,11 @@ class AccountingSystem:
         if side == "BUY":
             cost = amount_usd
             btc_bought = cost / price
-            
-            # If cost > cash, we are borrowing
+
             if cost > self.state["cash"]:
                 borrow_amount = cost - self.state["cash"]
                 self.state["debt"] += borrow_amount
-                self.state["cash"] = 0.0 # Used all cash
+                self.state["cash"] = 0.0 
             else:
                 self.state["cash"] -= cost
                 
@@ -101,8 +83,7 @@ class AccountingSystem:
             
             self.state["btc_amount"] -= btc_sold
             self.state["cash"] += revenue
-            
-            # Repay Debt automatically if we have cash and debt
+
             if self.state["debt"] > 0 and self.state["cash"] > 0:
                 repay_amount = min(self.state["debt"], self.state["cash"])
                 self.state["debt"] -= repay_amount
@@ -134,8 +115,7 @@ class AccountingSystem:
         current = latest["equity"]
         
         roi = ((current - initial) / initial) * 100
-        
-        # Buy & Hold Benchmark
+
         first_price = self.state["history"][0]["price"]
         last_price = latest["price"]
         bnh_roi = ((last_price - first_price) / first_price) * 100
@@ -167,10 +147,6 @@ class AccountingSystem:
         return report
 
     def _calculate_win_rate(self):
-        """
-        Calculates Win Rate based on closed trades in order_book.csv.
-        A 'Closed Trade' is defined as a SELL order that realizes profit/loss.
-        """
         csv_file = "data/accounting/order_book.csv"
         if not os.path.exists(csv_file):
             return 0.0, 0
@@ -179,13 +155,11 @@ class AccountingSystem:
         losses = 0
         total_trades = 0
         
-        # Simple FIFO logic to track PnL
-        # Queue of [price, amount] for buys
         inventory = [] 
         
         try:
             with open(csv_file, "r") as f:
-                lines = f.readlines()[1:] # Skip header
+                lines = f.readlines()[1:] 
                 
             for line in lines:
                 parts = line.strip().split(",")
@@ -198,7 +172,6 @@ class AccountingSystem:
                 if side == "BUY":
                     inventory.append({"price": price, "amount": amount_btc})
                 elif side == "SELL":
-                    # Match against inventory (FIFO)
                     sold_amount = amount_btc
                     cost_basis = 0.0
                     matched_amount = 0.0
@@ -231,10 +204,6 @@ class AccountingSystem:
             return 0.0, 0
 
     def _calculate_monthly_return(self):
-        """
-        Calculates projected Monthly Return based on historical performance.
-        Uses (1 + total_roi)^(30/days) - 1
-        """
         if not self.state or not self.state["history"]:
             return None
             
@@ -253,9 +222,7 @@ class AccountingSystem:
         current_equity = last_entry["equity"]
         
         total_return = (current_equity - initial_equity) / initial_equity
-        
-        # Projected Monthly Return
-        # (1 + r_total) ^ (30 / days) - 1
+
         try:
             monthly_return = ((1 + total_return) ** (30 / days_passed)) - 1
             return monthly_return * 100
@@ -268,7 +235,7 @@ class AccountingSystem:
         """
         readme_path = "README.md"
         if not os.path.exists(readme_path):
-            print("⚠️ README.md not found. Skipping update.")
+            print("README.md not found. Skipping update.")
             return
 
         if not self.state or not self.state["history"]:

@@ -313,6 +313,16 @@
             "debt": 0.0,
             "equity": 1975.95,
             "interest_paid": 0.0
+        },
+        {
+            "date": "2025-12-02",
+            "price": 91669.62446126241,
+            "cash": 1408.28,
+            "btc_amount": 0.0065832857873232755,
+            "btc_value": 603.49,
+            "debt": 0.0,
+            "equity": 2011.77,
+            "interest_paid": 0.0
         }
     ],
     "last_trade_date": "2025-11-30 11:14:04"

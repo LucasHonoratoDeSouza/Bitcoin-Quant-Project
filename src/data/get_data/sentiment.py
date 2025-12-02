@@ -1,12 +1,6 @@
 import requests
 
 def get_fear_and_greed():
-    """
-    Fetches the Crypto Fear & Greed Index from Alternative.me.
-    This is the industry standard index (0-100).
-    0 = Extreme Fear
-    100 = Extreme Greed
-    """
     url = "https://api.alternative.me/fng/"
     
     try:

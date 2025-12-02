@@ -55,20 +55,11 @@ class BitcoinCycle:
         days_since = (date - past_h).days if past_h else 9999
         days_until = (next_h - date).days if next_h else 9999
         
-        # Logic based on docs
-        # 1. Expansion: 0 to 18 months (approx 540 days) after Halving
         if past_h and days_since <= 540:
             phase = "Post-Halving Expansion"
             
-        # 2. Accumulation: 12-18 months before Halving (365 to 540 days before)
         elif next_h and 365 < days_until <= 540:
             phase = "Accumulation"
-            
-        # 3. Pre-Halving Rally: < 9 months before Halving (approx 270 days)
-        # Note: There is a gap between Accumulation and Pre-Halving in the simple logic above.
-        # Let's refine:
-        # Accumulation: > 270 days until halving (and not in Bear of previous)
-        # Pre-Halving: <= 270 days until halving
         
         elif next_h and days_until <= 270:
             phase = "Pre-Halving Rally"
@@ -76,7 +67,6 @@ class BitcoinCycle:
         elif next_h and 270 < days_until <= 540:
              phase = "Accumulation"
 
-        # 4. Bear Market / Distribution: Everything else (usually > 540 days since last halving)
         else:
             phase = "Bear Market / Distribution"
 
@@ -90,6 +80,6 @@ class BitcoinCycle:
 
 if __name__ == "__main__":
     cycle = BitcoinCycle()
-    print(cycle.get_phase("2023-11-22")) # Should be Accumulation/Pre-Halving for 2024
-    print(cycle.get_phase("2024-05-22")) # Post-Halving
-    print(cycle.get_phase("2025-11-22")) # Post-Halving
+    print(cycle.get_phase("2023-11-22")) 
+    print(cycle.get_phase("2024-05-22"))
+    print(cycle.get_phase("2025-11-22")) 
