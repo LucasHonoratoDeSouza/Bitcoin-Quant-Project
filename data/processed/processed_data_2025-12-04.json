@@ -1,0 +1,40 @@
+{
+    "timestamp": "2025-12-04T17:14:10.205330",
+    "raw_source": "data/raw/daily_data_2025-12-04.json",
+    "market_data": {
+        "current_price": 91975.4482508098,
+        "daily_change_pct": -1.7560341112044648,
+        "weekly_change_pct": 0.7629216105900476,
+        "monthly_change_pct": -9.50440274284485,
+        "ema_365": 104020.95562528152,
+        "price_vs_ema_pct": -11.57988532412997
+    },
+    "metrics": {
+        "mvrv": 1.659424078076112,
+        "mvrv_zscore": -0.6197381576852297,
+        "sopr": 1.0053194104898568,
+        "rup": 0.6360762333731237,
+        "mayer_multiple": 0.8352054063724409,
+        "fear_and_greed": 26,
+        "interest_rate": 3.88,
+        "m2_yoy": 4.646120489391348,
+        "inflation_yoy": 3.0226996261723786,
+        "funding_rate": 7.3e-05
+    },
+    "flags": {
+        "is_accumulation": false,
+        "is_overheated": false,
+        "is_fear_extreme": false,
+        "is_greed_extreme": false,
+        "is_liquidity_good": false,
+        "is_inflation_high": true,
+        "is_inflation_falling": false,
+        "is_bull_trend": false,
+        "is_derivatives_risk": false,
+        "is_volatility_opportunity": false,
+        "is_positive_seasonality": true,
+        "is_high_corr_spx": false,
+        "is_high_corr_gold": false
+    },
+    "market_cycle_phase": "Bear Market / Distribution"
+}
