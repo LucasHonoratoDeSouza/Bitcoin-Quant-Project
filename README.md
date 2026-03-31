@@ -130,7 +130,10 @@ The repository now ships with two automation flows:
 *   **CI**: runs syntax validation, unit tests, and a quick status check on pushes and pull requests.
 *   **Daily pipeline**: runs the full download -> process -> paper trading routine on a schedule, uploads artifacts, and commits generated reports/data back to the repository.
 
-To enable the daily workflow in GitHub, configure the repository secret `FRED_API_KEY`.
+To enable the daily workflow in GitHub:
+
+*   Use `Settings > Secrets and variables > Actions > Repository secrets` and create `FRED_API_KEY`.
+*   Or use `Settings > Environments`, store `FRED_API_KEY` in that environment, and create the repository variable `WORKFLOW_ENVIRONMENT` with the exact environment name.
 
 Check the `reports/daily/` folder for the generated investment memos.
 

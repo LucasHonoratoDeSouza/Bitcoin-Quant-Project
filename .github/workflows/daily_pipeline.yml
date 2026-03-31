@@ -13,9 +13,78 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  run-daily-pipeline:
+  run-daily-pipeline-repository-secret:
+    if: ${{ vars.WORKFLOW_ENVIRONMENT == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      PYTHONUNBUFFERED: "1"
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run full pipeline
+        run: python main.py full --strict
+
+      - name: Write status summary
+        run: |
+          python main.py status --json > pipeline-status.json
+          {
+            echo "## Daily pipeline status"
+            echo '```json'
+            cat pipeline-status.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload pipeline artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitcoin-quant-daily-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            pipeline-status.json
+            latest_report.md
+            README.md
+            data/raw
+            data/processed
+            data/signals
+            data/accounting
+            reports/daily
+
+      - name: Commit generated files
+        run: |
+          if [ -z "$(git status --porcelain -- README.md latest_report.md data reports)" ]; then
+            echo "No generated changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md latest_report.md data reports
+          git commit -m "chore: refresh daily market pipeline ($(date -u +'%Y-%m-%d'))"
+          git push
+
+  run-daily-pipeline-environment-secret:
+    if: ${{ vars.WORKFLOW_ENVIRONMENT != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ vars.WORKFLOW_ENVIRONMENT }}
     env:
       PYTHONUNBUFFERED: "1"
       FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
