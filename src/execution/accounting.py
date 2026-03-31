@@ -137,6 +137,7 @@ class AccountingSystem:
         first_price = self.state["history"][0]["price"]
         last_price = latest["price"]
         bnh_roi = ((last_price - first_price) / first_price) * 100
+        alpha_vs_btc = roi - bnh_roi
         
         cash_pct = (latest['cash'] / current) * 100
         btc_pct = (latest['btc_value'] / current) * 100
@@ -150,7 +151,7 @@ class AccountingSystem:
 | :--- | :--- |
 | **Total Equity** | **${current:,.2f}** |
 | **ROI (Total)** | `{roi:+.2f}%` |
-| **Alpha (vs B&H)** | `{roi - bnh_roi:+.2f}%` |
+| **Alpha (vs BTC Buy & Hold)** | `{alpha_vs_btc:+.2f}%` |
 
 ## 💼 Portfolio Composition
 | Asset | Value | Allocation | Details |
@@ -263,6 +264,10 @@ class AccountingSystem:
         current = latest["equity"]
         profit = current - initial
         roi = (profit / initial) * 100
+        first_price = self.state["history"][0]["price"]
+        last_price = latest["price"]
+        bnh_roi = ((last_price - first_price) / first_price) * 100
+        alpha_vs_btc = roi - bnh_roi
         
         # Calculate Real Win Rate
         win_rate, trade_count = self._calculate_win_rate()
@@ -278,11 +283,13 @@ class AccountingSystem:
         live_stats_block = f"""{LIVE_STATS_START}
 ## Live Paper Trading
 *Forward testing since Nov 23, 2025.*
+*Key benchmark: **Alpha vs BTC** shows whether the strategy is beating simple Bitcoin buy-and-hold over the same period.*
 
 | Metric | Value | Description |
 | :--- | :--- | :--- |
 | **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
 | **Current Equity** | `${current:,.2f}` | Updated from the latest paper trading snapshot |
+| **Alpha vs BTC** | `{alpha_vs_btc:+.2f}%` | Strategy ROI minus BTC buy-and-hold ROI over the same forward-testing window |
 | **Net Profit** | `${profit:,.2f}` | **{roi:+.2f}%** |
 | **Avg. Monthly Return** | `{monthly_str}` | {monthly_desc} |
 | **Win Rate** | `{win_rate:.1f}%` | {trade_count} Trades Executed |

@@ -76,11 +76,13 @@ FRED_API_KEY=your_fred_api_key_here
 <!-- live-stats:start -->
 ## Live Paper Trading
 *Forward testing since Nov 23, 2025.*
+*Key benchmark: **Alpha vs BTC** shows whether the strategy is beating simple Bitcoin buy-and-hold over the same period.*
 
 | Metric | Value | Description |
 | :--- | :--- | :--- |
 | **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
 | **Current Equity** | `$1,849.54` | Updated from the latest paper trading snapshot |
+| **Alpha vs BTC** | `+15.07%` | Strategy ROI minus BTC buy-and-hold ROI over the same forward-testing window |
 | **Net Profit** | `$-150.46` | **-7.52%** |
 | **Avg. Monthly Return** | `-1.82%` | Projected (30-day) |
 | **Win Rate** | `0.0%` | 0 Trades Executed |

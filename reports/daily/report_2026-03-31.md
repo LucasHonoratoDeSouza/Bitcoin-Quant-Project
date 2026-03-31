@@ -5,7 +5,7 @@
 | :--- | :--- |
 | **Total Equity** | **$1,849.54** |
 | **ROI (Total)** | `-7.52%` |
-| **Alpha (vs B&H)** | `+15.07%` |
+| **Alpha (vs BTC Buy & Hold)** | `+15.07%` |
 
 ## 💼 Portfolio Composition
 | Asset | Value | Allocation | Details |
