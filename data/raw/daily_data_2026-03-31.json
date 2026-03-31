@@ -2,11 +2,11 @@
     "timestamp": "2026-03-31T00:00:00",
     "metrics": {
         "btc_price_ema_365": {
-            "current_price": 67027.00142201154,
-            "ema_365": 89666.00577495943,
-            "daily_change_pct": 0.4913502525723547,
-            "weekly_change_pct": -4.959283304714436,
-            "monthly_change_pct": 1.9988319798905834
+            "current_price": 66908.68551305482,
+            "ema_365": 89665.35923993781,
+            "daily_change_pct": 0.3139631519237402,
+            "weekly_change_pct": -5.127048959527214,
+            "monthly_change_pct": 1.8187838759594213
         },
         "interest_rate": {
             "current_rate": 3.64,
@@ -37,10 +37,10 @@
             "inflation_trend": 0.04280267822320516
         },
         "derivatives": {
-            "open_interest": 91281.945,
+            "open_interest": null,
             "long_short_ratio": null,
-            "funding_rate": 7.18e-06,
-            "basis_pct": -0.02799157423949387
+            "funding_rate": null,
+            "basis_pct": null
         },
         "fear_and_greed": {
             "value": 11,
@@ -48,8 +48,8 @@
             "timestamp": 1774915200
         },
         "macro_correlations": {
-            "corr_spx_90d": 0.5847979870929941,
-            "corr_gold_90d": 0.06293206670224834
+            "corr_spx_90d": 0.5816201684501007,
+            "corr_gold_90d": 0.06286862781141023
         }
     },
     "meta": {

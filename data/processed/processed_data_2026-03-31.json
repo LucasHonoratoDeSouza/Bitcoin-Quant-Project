@@ -1,13 +1,13 @@
 {
     "timestamp": "2026-03-31T00:00:00",
-    "raw_source": "/home/lucas/Bitcoin-Quant-Project/data/raw/daily_data_2026-03-31.json",
+    "raw_source": "/home/runner/work/Bitcoin-Quant-Project/Bitcoin-Quant-Project/data/raw/daily_data_2026-03-31.json",
     "market_data": {
-        "current_price": 67027.00142201154,
-        "daily_change_pct": 0.4913502525723547,
-        "weekly_change_pct": -4.959283304714436,
-        "monthly_change_pct": 1.9988319798905834,
-        "ema_365": 89666.00577495943,
-        "price_vs_ema_pct": -25.24814633738282
+        "current_price": 66908.68551305482,
+        "daily_change_pct": 0.3139631519237402,
+        "weekly_change_pct": -5.127048959527214,
+        "monthly_change_pct": 1.8187838759594213,
+        "ema_365": 89665.35923993781,
+        "price_vs_ema_pct": -25.379560088515152
     },
     "metrics": {
         "mvrv": 1.6982072995452513,
@@ -19,7 +19,7 @@
         "interest_rate": 3.64,
         "m2_yoy": 4.877112135176653,
         "inflation_yoy": 2.43400411037322,
-        "funding_rate": 7.18e-06
+        "funding_rate": null
     },
     "flags": {
         "is_accumulation": false,
