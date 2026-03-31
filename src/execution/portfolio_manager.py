@@ -1,5 +1,9 @@
 from dataclasses import dataclass
+import logging
 from typing import Optional
+
+
+LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class Order:
@@ -42,7 +46,14 @@ class PortfolioManager:
         
         diff_usd = target_btc_value - current_btc_value
         
-        print(f"DEBUG: Equity={net_equity:.2f}, TargetAlloc={target_allocation:.2f}, TargetBTC={target_btc_value:.2f}, CurrentBTC={current_btc_value:.2f}, Diff={diff_usd:.2f}")
+        LOGGER.debug(
+            "Equity=%.2f TargetAlloc=%.2f TargetBTC=%.2f CurrentBTC=%.2f Diff=%.2f",
+            net_equity,
+            target_allocation,
+            target_btc_value,
+            current_btc_value,
+            diff_usd,
+        )
 
         # --- SMART EXECUTION LOGIC ---
         
@@ -52,7 +63,11 @@ class PortfolioManager:
         dynamic_threshold = max(self.min_trade_usd, net_equity * 0.02)
         
         if abs(diff_usd) < dynamic_threshold:
-            print(f"💤 Trade skipped: Diff ${diff_usd:.2f} < Threshold ${dynamic_threshold:.2f}")
+            LOGGER.info(
+                "Trade skipped because diff $%.2f is below threshold $%.2f.",
+                diff_usd,
+                dynamic_threshold,
+            )
             return None
 
         # 2. Cooldown Mechanism
@@ -70,7 +85,11 @@ class PortfolioManager:
             days_since = (current_date - last_trade_date).days
             
             if days_since < self.cooldown_days:
-                print(f"⏳ Cooldown Active: {days_since} days since last trade. Waiting {self.cooldown_days} days.")
+                LOGGER.info(
+                    "Cooldown active: %s days since last trade, waiting %s days.",
+                    days_since,
+                    self.cooldown_days,
+                )
                 return None
 
         # --- END SMART EXECUTION ---

@@ -1,25 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "bitcoin-quant-project"
 version = "0.1.0"
-description = "A heuristic and machine learningdecision engine for Bitcoin trading"
+description = "A quantitative decision engine for Bitcoin trading and paper trading automation"
+readme = "README.md"
 authors = [
     {name = "Lucas Honorato", email = "lucashonoratodesouza10@gmail.com"},
 ]
 dependencies = [
+    "Flask",
+    "Flask-Cors",
     "requests",
     "pandas",
     "python-dotenv",
     "chaindl",
-    "yfinance"
+    "yfinance",
+    "fredapi",
+    "pandas_datareader"
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 [tool.setuptools]
-packages = ["src"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+namespaces = true
 
 [tool.black]
 line-length = 88
-target-version = ['py39']
+target-version = ['py310']
 
 [tool.isort]
 profile = "black"

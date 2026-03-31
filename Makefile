@@ -1,24 +1,35 @@
-.PHONY: install download process run clean
+.PHONY: install test lint status download process paper run dashboard clean
 
-PYTHON = venv/bin/python
-PIP = venv/bin/pip
+PYTHON ?= python3
+PIP ?= $(PYTHON) -m pip
 
 install:
+	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
 
+test:
+	$(PYTHON) -m unittest discover -s tests -p 'test*.py' -v
+
+lint:
+	$(PYTHON) -m compileall src webapp main.py tests
+
+status:
+	$(PYTHON) main.py status
+
 download:
-	$(PYTHON) src/data/download.py
+	$(PYTHON) main.py download
 
 process:
-	$(PYTHON) src/strategy/process_data.py
+	$(PYTHON) main.py process
 
-run: download process
-	@echo "🚀 Daily workflow completed!"
+paper:
+	$(PYTHON) main.py paper
 
-paper: download process
-	$(PYTHON) src/main_paper_trading.py
+run:
+	$(PYTHON) main.py full
+
+dashboard:
+	$(PYTHON) main.py dashboard
 
 clean:
-	rm -rf __pycache__
-	rm -rf src/__pycache__
-	rm -rf src/*/__pycache__
+	find . -type d -name "__pycache__" -prune -exec rm -rf {} +

@@ -1,7 +1,9 @@
 chaindl
-pandas
-requests
-python-dotenv
-yfinance
+Flask
+Flask-Cors
 fredapi
+pandas
 pandas_datareader
+python-dotenv
+requests
+yfinance

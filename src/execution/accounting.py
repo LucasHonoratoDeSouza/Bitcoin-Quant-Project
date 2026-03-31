@@ -1,22 +1,33 @@
+from __future__ import annotations
+
 import json
-import os
+import logging
 from datetime import datetime
 from pathlib import Path
 
+from src.utils.project_paths import ACCOUNTING_DIR, README_PATH
+
+
+LOGGER = logging.getLogger(__name__)
+
+LIVE_STATS_START = "<!-- live-stats:start -->"
+LIVE_STATS_END = "<!-- live-stats:end -->"
+
 class AccountingSystem:
     
-    def __init__(self, state_file="data/accounting/portfolio_state.json"):
-        self.state_file = state_file
+    def __init__(self, state_file=ACCOUNTING_DIR / "portfolio_state.json"):
+        self.state_file = Path(state_file)
         self.state = self._load_state()
 
     def _load_state(self):
-        if os.path.exists(self.state_file):
-            with open(self.state_file, "r") as f:
+        if self.state_file.exists():
+            with self.state_file.open("r", encoding="utf-8") as f:
                 return json.load(f)
         else:
             return None 
+
     def initialize(self, current_price):
-        print("Initializing new Portfolio State...")
+        LOGGER.info("Initializing new portfolio state.")
         initial_cash = 1000.0
         initial_btc_value = 1000.0
         initial_btc_amount = initial_btc_value / current_price
@@ -56,11 +67,14 @@ class AccountingSystem:
             "interest_paid": round(interest_cost, 2)
         }
         
-        self.state["history"].append(snapshot)
+        if self.state["history"] and self.state["history"][-1]["date"] == date_str:
+            self.state["history"][-1] = snapshot
+        else:
+            self.state["history"].append(snapshot)
         self._save_state()
         return snapshot
 
-    def execute_order(self, side, amount_usd, price):
+    def execute_order(self, side, amount_usd, price, executed_at=None):
         """
         Updates Cash/BTC/Debt based on an executed order.
         """
@@ -81,7 +95,7 @@ class AccountingSystem:
             revenue = amount_usd
             btc_sold = revenue / price
             
-            self.state["btc_amount"] -= btc_sold
+            self.state["btc_amount"] = max(self.state["btc_amount"] - btc_sold, 0.0)
             self.state["cash"] += revenue
 
             if self.state["debt"] > 0 and self.state["cash"] > 0:
@@ -89,18 +103,22 @@ class AccountingSystem:
                 self.state["debt"] -= repay_amount
                 self.state["cash"] -= repay_amount
 
-        date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if executed_at:
+            date_str = executed_at if len(executed_at) > 10 else f"{executed_at} 00:00:00"
+        else:
+            date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.state["last_trade_date"] = date_str
         self._log_order_csv(side, amount_usd, price, date_str)
         self._save_state()
 
     def _log_order_csv(self, side, amount_usd, price, date_str):
-        csv_file = "data/accounting/order_book.csv"
-        file_exists = os.path.isfile(csv_file)
+        csv_file = ACCOUNTING_DIR / "order_book.csv"
+        csv_file.parent.mkdir(parents=True, exist_ok=True)
+        file_exists = csv_file.exists()
         
         btc_amount = amount_usd / price
         
-        with open(csv_file, "a") as f:
+        with csv_file.open("a", encoding="utf-8") as f:
             if not file_exists:
                 f.write("Date,Side,Amount_USD,Price,BTC_Amount\n")
             
@@ -147,8 +165,8 @@ class AccountingSystem:
         return report
 
     def _calculate_win_rate(self):
-        csv_file = "data/accounting/order_book.csv"
-        if not os.path.exists(csv_file):
+        csv_file = ACCOUNTING_DIR / "order_book.csv"
+        if not csv_file.exists():
             return 0.0, 0
             
         wins = 0
@@ -158,7 +176,7 @@ class AccountingSystem:
         inventory = [] 
         
         try:
-            with open(csv_file, "r") as f:
+            with csv_file.open("r", encoding="utf-8") as f:
                 lines = f.readlines()[1:] 
                 
             for line in lines:
@@ -200,7 +218,7 @@ class AccountingSystem:
             return (wins / total_trades) * 100, total_trades
             
         except Exception as e:
-            print(f"⚠️ Error calculating Win Rate: {e}")
+            LOGGER.warning("Error calculating win rate: %s", e)
             return 0.0, 0
 
     def _calculate_monthly_return(self):
@@ -233,9 +251,8 @@ class AccountingSystem:
         """
         Updates the 'Live Paper Trading' section in README.md with the latest stats.
         """
-        readme_path = "README.md"
-        if not os.path.exists(readme_path):
-            print("README.md not found. Skipping update.")
+        if not README_PATH.exists():
+            LOGGER.info("README.md not found. Skipping update.")
             return
 
         if not self.state or not self.state["history"]:
@@ -258,57 +275,37 @@ class AccountingSystem:
         monthly_str = f"{monthly_return:+.2f}%" if monthly_return is not None else "TBD"
         monthly_desc = "Projected (30-day)" if monthly_return is not None else "*Collecting data...*"
         
-        # Read README
-        with open(readme_path, "r") as f:
-            content = f.read()
-            
-        import re
-        
-        # Update Current Equity
-        content = re.sub(
-            r"\| \*\*Current Equity\*\* \| `\$[\d,]+\.\d{2}` \|",
-            f"| **Current Equity** | `${current:,.2f}` |",
-            content
-        )
-        
-        # Update Net Profit
-        content = re.sub(
-            r"\| \*\*Net Profit\*\* \| `[\-\$][\d,]+\.\d{2}` \| \*\*[\+\-]\d+\.\d{2}%\*\* \|",
-            f"| **Net Profit** | `${profit:,.2f}` | **{roi:+.2f}%** |",
-            content
-        )
-        
-        # Update Win Rate
-        # | **Win Rate** | `100%` | 1 Trade Executed (Rebalance) |
-        content = re.sub(
-            r"\| \*\*Win Rate\*\* \| `[\d\.]+%` \| .* \|",
-            f"| **Win Rate** | `{win_rate:.1f}%` | {trade_count} Trades Executed |",
-            content
-        )
-        
-        # Update Avg. Monthly Return
-        content = re.sub(
-            r"\| \*\*Avg\. Monthly Return\*\* \| `.*` \| .* \|",
-            f"| **Avg. Monthly Return** | `{monthly_str}` | {monthly_desc} |",
-            content
-        )
-        
-        # Update Status Quote
-        content = re.sub(
-            r"> \*\*Status\*\*: .*",
-            f"> **Status**: {status_icon} **Active** & **{status_text}** (Capital Preserved).",
-            content
-        )
-        
-        with open(readme_path, "w") as f:
-            f.write(content)
-        
-        print("✅ README.md updated with latest metrics.")
+        live_stats_block = f"""{LIVE_STATS_START}
+## Live Paper Trading
+*Forward testing since Nov 23, 2025.*
+
+| Metric | Value | Description |
+| :--- | :--- | :--- |
+| **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
+| **Current Equity** | `${current:,.2f}` | Updated from the latest paper trading snapshot |
+| **Net Profit** | `${profit:,.2f}` | **{roi:+.2f}%** |
+| **Avg. Monthly Return** | `{monthly_str}` | {monthly_desc} |
+| **Win Rate** | `{win_rate:.1f}%` | {trade_count} Trades Executed |
+
+> **Status**: {status_icon} **Active** & **{status_text}** (Capital Preserved).
+{LIVE_STATS_END}"""
+
+        content = README_PATH.read_text(encoding="utf-8")
+        if LIVE_STATS_START not in content or LIVE_STATS_END not in content:
+            LOGGER.info("README.md live stats markers not found. Skipping update.")
+            return
+
+        start_index = content.index(LIVE_STATS_START)
+        end_index = content.index(LIVE_STATS_END) + len(LIVE_STATS_END)
+        updated_content = content[:start_index] + live_stats_block + content[end_index:]
+
+        README_PATH.write_text(updated_content, encoding="utf-8")
+        LOGGER.info("README.md updated with latest metrics.")
 
     def _save_state(self):
         # Ensure dir exists
-        Path(self.state_file).parent.mkdir(parents=True, exist_ok=True)
-        with open(self.state_file, "w") as f:
+        self.state_file.parent.mkdir(parents=True, exist_ok=True)
+        with self.state_file.open("w", encoding="utf-8") as f:
             json.dump(self.state, f, indent=4)
 
     def get_state(self):

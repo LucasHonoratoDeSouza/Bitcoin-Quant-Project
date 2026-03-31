@@ -39,19 +39,56 @@ Transparency is key. The system maintains a permanent, immutable record of every
 
 ---
 
-## � Live Paper Trading (Forward Testing)
-*Real-time performance tracking since Nov 23, 2025.*
+## ⚙️ Operating The Project
+
+### Local commands
+
+```bash
+make install
+make status
+make run
+make paper
+make dashboard
+make test
+```
+
+### CLI shortcuts
+
+```bash
+python main.py status --json
+python main.py download --strict
+python main.py process
+python main.py paper
+python main.py full --strict
+python main.py dashboard --port 5000
+```
+
+### Required secret
+
+Create a `.env` file from `.env.example` and set:
+
+```bash
+FRED_API_KEY=your_fred_api_key_here
+```
+
+---
+
+<!-- live-stats:start -->
+## Live Paper Trading
+*Forward testing since Nov 23, 2025.*
 
 | Metric | Value | Description |
 | :--- | :--- | :--- |
 | **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
-| **Current Equity** | `$1,984.77` | Updated Daily |
+| **Current Equity** | `$1,984.77` | Updated from the latest paper trading snapshot |
 | **Net Profit** | `$-29.63` | **-1.48%** |
 | **Avg. Monthly Return** | `-0.88%` | Projected (30-day) |
 | **Win Rate** | `0.0%` | 0 Trades Executed |
 
 > **Status**: 🔴 **Active** & **Drawdown** (Capital Preserved).
-> *The system is currently in "Forward Testing" mode to validate the Backtest results in real-time market conditions.*
+<!-- live-stats:end -->
+
+*The system is currently in "Forward Testing" mode to validate the Backtest results in real-time market conditions.*
 
 ---
 
@@ -85,6 +122,15 @@ Transparency is key. The system maintains a permanent, immutable record of every
 *   [ ] **Exchange Integration**: Direct connection to Binance/Bybit for automated execution.
 
 ---
+
+## 🤖 GitHub Actions
+
+The repository now ships with two automation flows:
+
+*   **CI**: runs syntax validation, unit tests, and a quick status check on pushes and pull requests.
+*   **Daily pipeline**: runs the full download -> process -> paper trading routine on a schedule, uploads artifacts, and commits generated reports/data back to the repository.
+
+To enable the daily workflow in GitHub, configure the repository secret `FRED_API_KEY`.
 
 Check the `reports/daily/` folder for the generated investment memos.
 

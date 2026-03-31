@@ -2,10 +2,10 @@ from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 import pandas as pd
 import json
-import os
 import re
 from pathlib import Path
-from datetime import datetime
+
+from src.utils.project_paths import ACCOUNTING_DIR, PROCESSED_DATA_DIR, REPORTS_DIR, SIGNALS_DIR
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
@@ -18,12 +18,11 @@ PAPER_TRADING_START = "2025-11-23"
 
 def parse_daily_reports():
     """Parse all daily reports to build historical data"""
-    reports_dir = PROJECT_ROOT / 'reports' / 'daily'
     reports = []
     
-    for report_file in sorted(reports_dir.glob('report_*.md')):
+    for report_file in sorted(REPORTS_DIR.glob('report_*.md')):
         try:
-            with open(report_file, 'r') as f:
+            with open(report_file, 'r', encoding='utf-8') as f:
                 content = f.read()
             
             # Extract date from filename
@@ -59,6 +58,42 @@ def parse_daily_reports():
     
     return reports
 
+
+def enrich_reports(reports):
+    scores_path = SIGNALS_DIR / 'score_history.csv'
+
+    if scores_path.exists():
+        scores_df = pd.read_csv(scores_path).dropna()
+        if not scores_df.empty:
+            scores_df['Date'] = pd.to_datetime(scores_df['Date']).dt.strftime('%Y-%m-%d')
+            scores_df = scores_df.drop_duplicates(subset=['Date'], keep='last')
+            score_lookup = scores_df.set_index('Date').to_dict('index')
+        else:
+            score_lookup = {}
+    else:
+        score_lookup = {}
+
+    for report in reports:
+        score_row = score_lookup.get(report['date'], {})
+        report['lt_score'] = float(score_row.get('Long_Term_Score', 0))
+        report['mt_score'] = float(score_row.get('Medium_Term_Score', 0))
+        report['btc_price'] = (
+            report['btc_value'] / report['btc_amount']
+            if report['btc_amount'] > 0
+            else 0
+        )
+
+    return reports
+
+
+def load_trade_history():
+    order_book_path = ACCOUNTING_DIR / 'order_book.csv'
+    if not order_book_path.exists():
+        return []
+
+    df = pd.read_csv(order_book_path).dropna(how='all')
+    return df.to_dict('records')
+
 @app.route('/')
 def index():
     """Serve the main dashboard page"""
@@ -68,32 +103,8 @@ def index():
 def get_paper_trading_history():
     """Return complete paper trading history from daily reports"""
     try:
-        reports = parse_daily_reports()
-        
-        # Get score history
-        scores_path = PROJECT_ROOT / 'data' / 'signals' / 'score_history.csv'
-        scores_df = pd.read_csv(scores_path)
-        scores_df = scores_df.dropna()
-        
-        # Filter scores from paper trading start date
-        scores_df['Date'] = pd.to_datetime(scores_df['Date'])
-        scores_df = scores_df[scores_df['Date'] >= PAPER_TRADING_START]
-        
-        # Merge reports with scores (use LAST entry if multiple scores per date)
-        for report in reports:
-            matching_score = scores_df[scores_df['Date'] == report['date']]
-            if not matching_score.empty:
-                report['lt_score'] = float(matching_score.iloc[-1]['Long_Term_Score'])
-                report['mt_score'] = float(matching_score.iloc[-1]['Medium_Term_Score'])
-            else:
-                report['lt_score'] = 0
-                report['mt_score'] = 0
-            
-            # Calculate BTC price from btc_value and btc_amount
-            if report['btc_amount'] > 0:
-                report['btc_price'] = report['btc_value'] / report['btc_amount']
-            else:
-                report['btc_price'] = 0
+        reports = enrich_reports(parse_daily_reports())
+        reports = [report for report in reports if report['date'] >= PAPER_TRADING_START]
         
         return jsonify({
             'success': True,
@@ -110,7 +121,13 @@ def get_paper_trading_history():
 def get_current_scores():
     """Return latest scores from score history"""
     try:
-        scores_path = PROJECT_ROOT / 'data' / 'signals' / 'score_history.csv'
+        scores_path = SIGNALS_DIR / 'score_history.csv'
+        if not scores_path.exists():
+            return jsonify({
+                'success': False,
+                'error': 'No score data available'
+            }), 404
+
         df = pd.read_csv(scores_path)
         
         # Get the latest non-empty row
@@ -137,7 +154,7 @@ def get_current_scores():
 def get_portfolio():
     """Return current portfolio status from latest report"""
     try:
-        reports = parse_daily_reports()
+        reports = enrich_reports(parse_daily_reports())
         if not reports:
             return jsonify({
                 'success': False,
@@ -145,12 +162,7 @@ def get_portfolio():
             }), 404
         
         latest = reports[-1]
-        
-        # Get order book for trade history
-        order_book_path = PROJECT_ROOT / 'data' / 'accounting' / 'order_book.csv'
-        df = pd.read_csv(order_book_path)
-        df = df.dropna()
-        trades = df.to_dict('records')
+        trades = load_trade_history()
         
         return jsonify({
             'success': True,
@@ -174,7 +186,7 @@ def get_portfolio():
 def get_price_history():
     """Return Bitcoin price history with scores from paper trading"""
     try:
-        reports = parse_daily_reports()
+        reports = enrich_reports(parse_daily_reports())
         
         price_data = [{
             'date': r['date'],
@@ -291,10 +303,8 @@ def get_performance_metrics():
 def get_latest_processed_data():
     """Return latest processed market data"""
     try:
-        processed_dir = PROJECT_ROOT / 'data' / 'processed'
-        
         # Find the latest processed file
-        json_files = list(processed_dir.glob('processed_data_*.json'))
+        json_files = list(PROCESSED_DATA_DIR.glob('processed_data_*.json'))
         if not json_files:
             return jsonify({
                 'success': False,

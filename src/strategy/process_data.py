@@ -1,18 +1,19 @@
+from __future__ import annotations
+
 import json
-import os
-import sys
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-import yfinance as yf
-import pandas as pd
-import numpy as np
 
-# Add project root to python path
-project_root = str(Path(__file__).parent.parent.parent)
-sys.path.append(project_root)
+import pandas as pd
+import yfinance as yf
 
 from src.features.cycle import BitcoinCycle
 from src.features.seasonality import BitcoinSeasonality
+from src.utils.project_paths import PROCESSED_DATA_DIR, latest_raw_data_file
+
+
+LOGGER = logging.getLogger(__name__)
 
 # --- Helper Functions ---
 
@@ -23,7 +24,11 @@ def fetch_historical_context(end_date_str, window_days=1460):
     end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
     start_date = end_date - timedelta(days=window_days + 365) # Buffer for MA calculation
     
-    print(f"Fetching historical context from {start_date.strftime('%Y-%m-%d')} to {end_date_str}...")
+    LOGGER.info(
+        "Fetching historical context from %s to %s",
+        start_date.strftime("%Y-%m-%d"),
+        end_date_str,
+    )
     
     try:
         df = yf.download("BTC-USD", start=start_date.strftime('%Y-%m-%d'), end=end_date_str, progress=False)
@@ -46,13 +51,13 @@ def fetch_historical_context(end_date_str, window_days=1460):
         last_z = df['mvrv_zscore'].iloc[-1]
         
         if pd.isna(last_z):
-            print("⚠️ Warning: Z-Score is NaN (insufficient history?). Defaulting to 0.")
+            LOGGER.warning("Z-Score is NaN, defaulting to 0.")
             return 0.0
             
         return float(last_z)
         
     except Exception as e:
-        print(f"❌ Error fetching historical context: {e}")
+        LOGGER.warning("Error fetching historical context: %s", e)
         return 0.0
 
 # --- Logic Functions ---
@@ -222,21 +227,22 @@ def get_market_context(data):
 
 # --- Main Processing ---
 
-def process_daily_data(raw_file_path):
-    print(f"Processing {raw_file_path}...")
-    
-    with open(raw_file_path, "r") as f:
+def process_daily_data(raw_file_path: str | Path, output_path: Path | None = None) -> dict:
+    raw_file_path = Path(raw_file_path)
+    LOGGER.info("Processing %s", raw_file_path)
+
+    with raw_file_path.open("r", encoding="utf-8") as f:
         raw_data = json.load(f)
         
     # 0. Fetch Historical Context for Z-Score
     # We need the date from the timestamp
     date_str = raw_data["timestamp"][:10]
     z_score = fetch_historical_context(date_str)
-    print(f"📊 Calculated MVRV Z-Score: {z_score:.2f}")
+    LOGGER.info("Calculated MVRV Z-Score: %.2f", z_score)
 
     processed = {
         "timestamp": raw_data["timestamp"],
-        "raw_source": raw_file_path,
+        "raw_source": str(raw_file_path),
         "market_data": get_market_context(raw_data),
         "metrics": {
             "mvrv": raw_data["metrics"].get("mvrv"),
@@ -285,26 +291,22 @@ def process_daily_data(raw_file_path):
     processed["flags"]["is_high_corr_gold"] = corr_flags["is_high_corr_gold"]
     
     # Save to processed folder
-    output_dir = Path("data/processed")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    date_str = raw_data["timestamp"][:10]
-    filename = f"processed_data_{date_str}.json"
-    output_path = output_dir / filename
-    
-    with open(output_path, "w") as f:
+    output_path = output_path or PROCESSED_DATA_DIR / f"processed_data_{date_str}.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with output_path.open("w", encoding="utf-8") as f:
         json.dump(processed, f, indent=4)
         
-    print(f"✅ Processed data saved to {output_path}")
-    return processed
+    LOGGER.info("Processed data saved to %s", output_path)
+    return {
+        "data": processed,
+        "output_path": output_path,
+    }
 
 if __name__ == "__main__":
-    # Target today's file specifically
-    today_str = datetime.now().strftime('%Y-%m-%d')
-    raw_path = f"data/raw/daily_data_{today_str}.json"
-    
-    if os.path.exists(raw_path):
+    raw_path = latest_raw_data_file()
+
+    if raw_path:
         process_daily_data(raw_path)
     else:
-        print(f"❌ No raw data found for today ({today_str}).")
-        print("Please run 'python src/data/download.py' first.")
+        raise FileNotFoundError("No raw data found. Run 'python main.py download' first.")

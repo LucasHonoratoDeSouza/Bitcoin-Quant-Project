@@ -27,8 +27,8 @@ class TestPortfolioManager(unittest.TestCase):
         self.assertEqual(order.amount_usd, 1000.0) # All In
         self.assertEqual(order.reason, "Strong Buy (High Conviction)")
 
-    def test_sell_everything(self):
-        # Scenario: 100% BTC, Bear Market Signal
+    def test_extreme_bear_boundary_keeps_moonbag(self):
+        # Scenario: LT == -60 sits on the moonbag boundary, not full exit.
         scores = {
             "long_term": {"value": -60},
             "medium_term": {"value": -40}
@@ -37,8 +37,8 @@ class TestPortfolioManager(unittest.TestCase):
         
         self.assertIsNotNone(order)
         self.assertEqual(order.side, "SELL")
-        self.assertEqual(order.amount_usd, 1000.0) # Sell All
-        self.assertEqual(order.reason, "Bear Market (Defensive)")
+        self.assertEqual(order.amount_usd, 900.0)
+        self.assertEqual(order.reason, "Bear Market (Moonbag 10%)")
 
     def test_accumulate_dca(self):
         # Scenario: 50% BTC, Accumulate Signal (MT -25)
@@ -99,13 +99,12 @@ class TestPortfolioManager(unittest.TestCase):
         self.assertEqual(order2.amount_usd, 100.0)
 
     def test_min_trade_threshold(self):
-        # Scenario: Small difference
+        # Scenario: Portfolio is already at the neutral baseline allocation.
         scores = {
             "long_term": {"value": 0},
             "medium_term": {"value": 0}
         }
-        # Neutral -> Target = Current. No trade.
-        order = self.pm.calculate_order(scores, current_cash=1000.0, current_btc_value=0.0)
+        order = self.pm.calculate_order(scores, current_cash=700.0, current_btc_value=300.0)
         self.assertIsNone(order)
 
     def test_super_bull_leverage_scaling(self):
