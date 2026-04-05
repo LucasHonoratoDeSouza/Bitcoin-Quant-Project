@@ -81,10 +81,10 @@ FRED_API_KEY=your_fred_api_key_here
 | Metric | Value | Description |
 | :--- | :--- | :--- |
 | **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
-| **Current Equity** | `$1,852.06` | Updated from the latest paper trading snapshot |
-| **Alpha vs BTC** | `+14.85%` | Strategy ROI minus BTC buy-and-hold ROI over the same forward-testing window |
-| **Net Profit** | `$-147.94` | **-7.40%** |
-| **Avg. Monthly Return** | `-1.73%` | Projected (30-day) |
+| **Current Equity** | `$1,852.60` | Updated from the latest paper trading snapshot |
+| **Alpha vs BTC** | `+14.80%` | Strategy ROI minus BTC buy-and-hold ROI over the same forward-testing window |
+| **Net Profit** | `$-147.40` | **-7.37%** |
+| **Avg. Monthly Return** | `-1.71%` | Projected (30-day) |
 | **Win Rate** | `0.0%` | 0 Trades Executed |
 
 > **Status**: 🔴 **Active** & **Drawdown** (Capital Preserved).
