@@ -1,0 +1,40 @@
+{
+    "timestamp": "2026-04-13T00:00:00",
+    "raw_source": "/home/runner/work/Bitcoin-Quant-Project/Bitcoin-Quant-Project/data/raw/daily_data_2026-04-13.json",
+    "market_data": {
+        "current_price": 72141.64300477941,
+        "daily_change_pct": 1.9572576879664207,
+        "weekly_change_pct": 4.759231696525801,
+        "monthly_change_pct": 1.298202205719088,
+        "ema_365": 88478.67401588579,
+        "price_vs_ema_pct": -18.464371435056954
+    },
+    "metrics": {
+        "mvrv": 1.6982072995452513,
+        "mvrv_zscore": -1.08547221832553,
+        "sopr": 1.0157392973480464,
+        "rup": 0.6740089133059286,
+        "mayer_multiple": 0.8778007929295834,
+        "fear_and_greed": 12,
+        "interest_rate": 3.64,
+        "m2_yoy": 4.877112135176653,
+        "inflation_yoy": 3.2859577528652006,
+        "funding_rate": null
+    },
+    "flags": {
+        "is_accumulation": false,
+        "is_overheated": false,
+        "is_fear_extreme": true,
+        "is_greed_extreme": false,
+        "is_liquidity_good": false,
+        "is_inflation_high": true,
+        "is_inflation_falling": false,
+        "is_bull_trend": false,
+        "is_derivatives_risk": false,
+        "is_volatility_opportunity": false,
+        "is_positive_seasonality": true,
+        "is_high_corr_spx": true,
+        "is_high_corr_gold": false
+    },
+    "market_cycle_phase": "Bear Market / Distribution"
+}
