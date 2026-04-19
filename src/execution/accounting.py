@@ -281,18 +281,17 @@ class AccountingSystem:
         # Calculate Real Win Rate
         win_rate, trade_count = self._calculate_win_rate()
         
-        status_icon = "🟢" if profit >= 0 else "🔴"
         status_text = "Profitable" if profit >= 0 else "Drawdown"
         
         # Calculate Monthly Return
         monthly_return = self._calculate_monthly_return()
         monthly_str = f"{monthly_return:+.2f}%" if monthly_return is not None else "TBD"
-        monthly_desc = "Projected (30-day)" if monthly_return is not None else "*Collecting data...*"
+        monthly_desc = "Projected (30-day)" if monthly_return is not None else "Collecting data"
         
         live_stats_block = f"""{LIVE_STATS_START}
-## Live Paper Trading
-*Forward testing since Nov 23, 2025.*
-*Key benchmark: **Alpha vs BTC** shows whether the strategy is beating simple Bitcoin buy-and-hold over the same period.*
+## Forward Testing Snapshot
+*Forward testing since Nov 23, 2025. Auto-updated by daily pipeline.*
+*Benchmark: Alpha vs BTC = strategy ROI minus BTC buy-and-hold ROI over the same period.*
 
 | Metric | Value | Description |
 | :--- | :--- | :--- |
@@ -301,9 +300,9 @@ class AccountingSystem:
 | **Alpha vs BTC** | `{alpha_vs_btc:+.2f}%` | Strategy ROI minus BTC buy-and-hold ROI over the same forward-testing window |
 | **Net Profit** | `${profit:,.2f}` | **{roi:+.2f}%** |
 | **Avg. Monthly Return** | `{monthly_str}` | {monthly_desc} |
-| **Win Rate** | `{win_rate:.1f}%` | {trade_count} Trades Executed |
+| **Win Rate** | `{win_rate:.1f}%` | {trade_count} trades executed |
 
-> **Status**: {status_icon} **Active** & **{status_text}** (Capital Preserved).
+> **Status**: Active | {status_text}
 {LIVE_STATS_END}"""
 
         content = README_PATH.read_text(encoding="utf-8")
