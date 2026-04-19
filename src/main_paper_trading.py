@@ -33,24 +33,23 @@ def upsert_score_history(
         with csv_path.open("r", newline="", encoding="utf-8") as existing_file:
             rows = list(csv.DictReader(existing_file))
 
-    updated = False
-    for row in rows:
-        if row["Date"] == date_str:
-            row["Long_Term_Score"] = f"{long_term_score:.2f}"
-            row["Medium_Term_Score"] = f"{medium_term_score:.2f}"
-            updated = True
-            break
+    # De-duplicate by date and keep the newest payload for each day.
+    row_by_date = {
+        row["Date"]: {
+            "Date": row["Date"],
+            "Long_Term_Score": row["Long_Term_Score"],
+            "Medium_Term_Score": row["Medium_Term_Score"],
+        }
+        for row in rows
+        if row.get("Date")
+    }
+    row_by_date[date_str] = {
+        "Date": date_str,
+        "Long_Term_Score": f"{long_term_score:.2f}",
+        "Medium_Term_Score": f"{medium_term_score:.2f}",
+    }
 
-    if not updated:
-        rows.append(
-            {
-                "Date": date_str,
-                "Long_Term_Score": f"{long_term_score:.2f}",
-                "Medium_Term_Score": f"{medium_term_score:.2f}",
-            }
-        )
-
-    rows.sort(key=lambda row: row["Date"])
+    rows = sorted(row_by_date.values(), key=lambda row: row["Date"])
 
     with csv_path.open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(
@@ -79,7 +78,9 @@ def run_daily_paper_trading(processed_file_path: str | Path | None = None) -> di
     date_str = data["timestamp"][:10]
 
     # 4. Calculate Scores
-    scorer = QuantScorer()
+    # Backtest-gated default: legacy scoring remains production mode until
+    # advanced candidates beat it out-of-sample.
+    scorer = QuantScorer(mode="legacy")
     analysis = scorer.calculate_scores(data)
     scores = analysis["scores"]
     
@@ -104,7 +105,8 @@ def run_daily_paper_trading(processed_file_path: str | Path | None = None) -> di
         
     state = accounting.get_state()
     
-    pm = PortfolioManager()
+    # Tuned cooldown based on 2026-04-19 model comparison.
+    pm = PortfolioManager(min_trade_usd=20.0, cooldown_days=1)
     
     # Retrieve last_trade_date and current_date for order calculation
     last_trade_date = state.get("last_trade_date")

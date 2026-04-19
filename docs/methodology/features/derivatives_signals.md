@@ -1,39 +1,36 @@
-1. Open Interest (OI)
+## Derivatives Signals
 
-Definition:
-OI_t = total number of open long + short futures contracts at time t.
+Derivatives features are used primarily as crowding and liquidation-risk indicators.
 
-Normalized (z-score):
-OI_z = (OI_t - mean(OI)) / std(OI)
+## 1. Open Interest (OI)
 
-Effect:
+$$
+OI_t = \text{Total open futures contracts at time } t
+$$
 
-High OI_z → high leverage → higher liquidation risk.
+- High OI after strong upside often implies crowded leverage.
+- Low OI implies cleaner positioning and lower cascade risk.
 
-Low OI_z → clean market → safer trend entries.
+## 2. Long/Short Ratio (LSR)
 
+$$
+LSR_t = \frac{\text{Long accounts}}{\text{Short accounts}}
+$$
 
-2. Long/Short Ratio (LSR)
+- High LSR can indicate one-sided longs and liquidation vulnerability.
+- Low LSR can indicate squeeze potential if price reverses upward.
 
-Definition:
-LSR = Longs / Shorts
+## 3. Funding Rate and Basis
 
-Effect:
+Funding rate and futures basis are used as overheat diagnostics:
 
-LSR >> 1 → long-side overcrowding → downside liquidation risk.
+$$
+\text{Basis}_t = \frac{F_t - S_t}{S_t}
+$$
 
-LSR << 1 → short-side overcrowding → short squeeze potential.
+- Very positive funding/basis: leverage-heavy bullish crowding.
+- Negative basis: stress regime, potentially attractive only with supportive valuation.
 
-3. Derivatives Basis
+## Data Quality Note
 
-Definition:
-Basis = (FuturesPrice_t - SpotPrice_t) / SpotPrice_t
-
-Annualized:
-BasisAnnualized = Basis * (365 / DaysToExpiry)
-
-Effect:
-
-High positive basis → leveraged optimism → reduces long conviction.
-
-Negative basis → backwardation/stress → possible accumulation zones.
+Derivatives APIs can intermittently return null fields. The pipeline stores missing values explicitly so risk logic can default to neutral/defensive behavior rather than silently failing.

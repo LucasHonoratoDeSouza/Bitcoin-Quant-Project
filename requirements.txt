@@ -3,7 +3,7 @@ Flask
 Flask-Cors
 fredapi
 pandas
-pandas_datareader
+numpy
 python-dotenv
 requests
 yfinance

@@ -1,0 +1,21 @@
+period,model,total_return_pct,cagr_pct,max_drawdown_pct,sharpe,trades
+Bull 2021,buy_and_hold,121.27,152.48,-53.06,1.529,0
+Bull 2021,production_legacy_cooldown1,65.61,80.09,-30.9,1.366,32
+Bull 2021,legacy_cooldown3_baseline,60.86,74.08,-30.61,1.3,28
+Bull 2021,advanced_adaptive_research,62.16,75.73,-30.76,1.477,212
+Bull 2021,legacy_confidence_research,66.27,80.93,-30.52,1.375,37
+Bear 2021-2022,buy_and_hold,-75.69,-74.76,-75.89,-1.759,0
+Bear 2021-2022,production_legacy_cooldown1,-29.99,-29.32,-30.03,-1.689,25
+Bear 2021-2022,legacy_cooldown3_baseline,-27.8,-27.17,-27.84,-1.567,23
+Bear 2021-2022,advanced_adaptive_research,-39.55,-38.73,-39.77,-1.85,189
+Bear 2021-2022,legacy_confidence_research,-28.74,-28.1,-28.78,-1.679,32
+Recovery 2022-2024,buy_and_hold,294.35,164.94,-20.06,2.306,0
+Recovery 2022-2024,production_legacy_cooldown1,286.79,161.32,-20.06,2.278,6
+Recovery 2022-2024,legacy_cooldown3_baseline,282.84,159.42,-20.06,2.269,6
+Recovery 2022-2024,advanced_adaptive_research,110.72,69.77,-12.92,2.247,254
+Recovery 2022-2024,legacy_confidence_research,283.87,159.92,-19.94,2.278,7
+Post-Halving 2024-2026,buy_and_hold,16.51,7.96,-49.74,0.397,0
+Post-Halving 2024-2026,production_legacy_cooldown1,81.97,35.01,-18.01,1.107,58
+Post-Halving 2024-2026,legacy_cooldown3_baseline,78.19,33.59,-17.97,1.07,52
+Post-Halving 2024-2026,advanced_adaptive_research,27.19,12.82,-26.04,0.588,399
+Post-Halving 2024-2026,legacy_confidence_research,81.15,34.7,-17.93,1.103,69

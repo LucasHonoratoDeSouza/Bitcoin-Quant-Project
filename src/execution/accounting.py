@@ -45,6 +45,15 @@ class AccountingSystem:
     def update_daily(self, current_price, date_str):
         if self.state is None:
             self.initialize(current_price)
+
+        # Keep one canonical snapshot per date to avoid duplicated report rows.
+        deduped = {}
+        for entry in self.state.get("history", []):
+            entry_date = entry.get("date")
+            if entry_date:
+                deduped[entry_date] = entry
+        self.state["history"] = [deduped[key] for key in sorted(deduped.keys())]
+
         daily_interest_rate = 0.01 / 30
         interest_cost = 0.0
         

@@ -1,4 +1,4 @@
-.PHONY: install test lint status download process paper run dashboard clean
+.PHONY: install test lint status download process paper run dashboard backtest backtest-subperiod backtest-walkforward backtest-all clean
 
 PYTHON ?= python3
 PIP ?= $(PYTHON) -m pip
@@ -30,6 +30,20 @@ run:
 
 dashboard:
 	$(PYTHON) main.py dashboard
+
+backtest:
+	$(PYTHON) tests/backtest/compare_models.py
+
+backtest-subperiod:
+	$(PYTHON) tests/backtest/subperiod_analysis.py
+
+backtest-walkforward:
+	$(PYTHON) tests/backtest/walkforward_analysis.py
+
+backtest-all:
+	$(PYTHON) tests/backtest/compare_models.py
+	$(PYTHON) tests/backtest/subperiod_analysis.py
+	$(PYTHON) tests/backtest/walkforward_analysis.py
 
 clean:
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +

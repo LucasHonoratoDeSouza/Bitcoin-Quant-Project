@@ -12,3 +12,19 @@ Heavy analysis → only in the daily process.
 Instantaneous reaction to risks → 24/7 watchers.
 Every decision is explainable and recorded.
 Always prioritize greater accumulation of bitcoin and cash in the medium/long term.
+
+## 2026-04-19 Update: Production vs Research Separation
+
+The system now separates **production-grade defaults** from **research candidates**:
+
+- Production scoring: legacy scorer (`QuantScorer(mode="legacy")`) selected by backtest gate.
+- Production allocation: rule-based portfolio manager with tuned cooldown (`cooldown_days=1`).
+- Research scoring: advanced probabilistic scorer (`AdvancedQuantScorer`) and adaptive allocator.
+
+This avoids deploying underperforming candidates while keeping the research layer ready.
+
+## Principles
+
+1. Reproducibility: every decision can be re-run from saved artifacts.
+2. Risk-first deployment: higher return alone is not sufficient for promotion.
+3. Scientific rollout: candidates must pass objective checks on return, drawdown, and Sharpe.

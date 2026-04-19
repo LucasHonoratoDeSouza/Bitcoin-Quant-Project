@@ -127,3 +127,12 @@ Realized losses accelerate as panic begins
 
 Interpretation:
 The market unwinds excess leverage and enters a long, painful downtrend.
+
+## Practical Caveat
+
+Cycle phase is treated as a **context prior**, not a deterministic predictor.
+
+- It helps classify structural regime.
+- It does not replace valuation, liquidity, and positioning evidence.
+
+Production scoring therefore combines cycle context with orthogonal features instead of trading cycle labels in isolation.

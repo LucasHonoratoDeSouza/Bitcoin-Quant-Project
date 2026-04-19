@@ -1,7 +1,6 @@
 import yfinance as yf
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 
 class BacktestDataLoader:
     """
@@ -24,10 +23,15 @@ class BacktestDataLoader:
             
         self.data = self.data.rename(columns={"Close": "price", "High": "high", "Low": "low", "Open": "open", "Volume": "volume"})
         
-        # --- FETCH REAL MACRO DATA ---
-        from tests.backtest.get_real_data import RealDataFetcher
-        fetcher = RealDataFetcher()
-        macro_df = fetcher.fetch_macro_data(self.start_date, self.end_date)
+        # --- FETCH REAL MACRO DATA (optional) ---
+        macro_df = None
+        try:
+            from tests.backtest.get_real_data import RealDataFetcher
+
+            fetcher = RealDataFetcher()
+            macro_df = fetcher.fetch_macro_data(self.start_date, self.end_date)
+        except Exception as exc:
+            print(f"⚠️ Real macro fetch disabled, using neutral macro data: {exc}")
         
         if macro_df is not None:
             # Merge Macro Data (Left Join on Date)
