@@ -139,6 +139,7 @@ class BacktestDataLoader:
             # Construct 'market_data'
             market_data = {
                 "current_price": row["price"],
+                "open_price": row["open"],
                 "daily_change_pct": (row["price"] - row["open"]) / row["open"] * 100, # Approx
                 "ema_365": row["sma_365"], # Using SMA as EMA proxy for simplicity or calc EMA
                 "price_vs_ema_pct": ((row["price"] - row["sma_365"]) / row["sma_365"]) * 100

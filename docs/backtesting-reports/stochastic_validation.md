@@ -36,15 +36,118 @@ Regime annualized drifts and vols:
 - Horizon: `180` days
 - Cost model: `15.00` bps per side
 - Debt carry: `10.00%` annual
+- White Reality Check bootstraps: `3000`
+- Bayesian posterior draws (beat probability): `30000`
 
 ## Model Robustness Under Stochastic Paths
 
-| Model | Paths | Mean Return | Std Return | VaR 95% | CVaR 95% | Mean Sharpe | Mean Max DD | Worst DD | P(Return>0) | P(Beat BnH) | Mean Trades |
-| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| legacy_cooldown3_baseline | 220 | +2.96% | 11.87% | -16.24% | -22.57% | 0.503 | -11.33% | -29.19% | 61.82% | 55.91% | 14.2 |
-| production_legacy_cooldown1 | 220 | +2.87% | 12.62% | -19.39% | -25.47% | 0.522 | -11.94% | -36.63% | 61.36% | 56.82% | 17.4 |
-| advanced_adaptive_research | 220 | +2.65% | 19.70% | -19.57% | -23.71% | 0.085 | -18.91% | -42.01% | 42.73% | 44.09% | 153.7 |
-| legacy_confidence_research | 220 | +1.53% | 6.57% | -8.56% | -11.31% | 0.403 | -6.18% | -18.55% | 55.91% | 53.18% | 25.7 |
+| Scenario | Model | Paths | Mean Return | VaR 95% | CVaR 95% | Mean Sharpe | Mean Max DD | P(Beat BnH) | Bayesian 95% CI | Mean Trades |
+| :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | :--- | ---: |
+| regime_jump | legacy_cooldown3_baseline | 220 | +2.96% | -16.24% | -22.57% | 0.503 | -11.33% | 55.91% | [49.34%, 62.25%] | 14.2 |
+| regime_jump | production_legacy_cooldown1 | 220 | +2.87% | -19.39% | -25.47% | 0.522 | -11.94% | 56.82% | [50.17%, 63.22%] | 17.4 |
+| regime_jump | advanced_adaptive_research | 220 | +2.10% | -13.95% | -20.36% | 0.607 | -9.25% | 54.09% | [47.41%, 60.51%] | 135.4 |
+| regime_jump | legacy_confidence_research | 220 | +1.53% | -8.56% | -11.31% | 0.403 | -6.18% | 53.18% | [46.57%, 59.66%] | 25.7 |
+| heston_jump | legacy_cooldown3_baseline | 140 | +4.52% | -22.40% | -25.57% | 0.764 | -11.01% | 45.00% | [37.02%, 53.35%] | 14.0 |
+| heston_jump | production_legacy_cooldown1 | 140 | +4.23% | -22.21% | -27.66% | 0.758 | -11.47% | 47.14% | [39.03%, 55.40%] | 16.8 |
+| heston_jump | advanced_adaptive_research | 140 | +2.43% | -21.37% | -27.92% | 0.787 | -9.24% | 46.43% | [38.38%, 54.64%] | 126.8 |
+| heston_jump | legacy_confidence_research | 140 | +2.33% | -10.30% | -12.82% | 0.640 | -5.91% | 41.43% | [33.61%, 49.74%] | 24.9 |
+
+## Heston Expansion Scenario
+
+Roadmap upgrade: stochastic-volatility (Heston-style) with jumps, for model-risk stress under volatility-of-volatility.
+
+| Scenario | Model | Mean Return | VaR 95% | Mean Sharpe | Mean Max DD | P(Beat BnH) |
+| :--- | :--- | ---: | ---: | ---: | ---: | ---: |
+| heston_jump | legacy_cooldown3_baseline | +4.52% | -22.40% | 0.764 | -11.01% | 45.00% |
+| heston_jump | production_legacy_cooldown1 | +4.23% | -22.21% | 0.758 | -11.47% | 47.14% |
+| heston_jump | advanced_adaptive_research | +2.43% | -21.37% | 0.787 | -9.24% | 46.43% |
+| heston_jump | legacy_confidence_research | +2.33% | -10.30% | 0.640 | -5.91% | 41.43% |
+
+## Multiple-Testing Control (White RC + Holm)
+
+White Reality Check-style bootstrap tests were applied to model alpha vs Buy and Hold, with Holm-Bonferroni correction across candidates.
+
+| Scenario | Comparison | Mean Alpha | White RC p-value | Holm-adjusted p-value | Reject at 5% |
+| :--- | :--- | ---: | ---: | ---: | :---: |
+| heston_jump | advanced_adaptive_research vs buy_and_hold | -21.791% | 1.00000 | 1.00000 | False |
+| heston_jump | legacy_confidence_research vs buy_and_hold | -21.882% | 1.00000 | 1.00000 | False |
+| heston_jump | legacy_cooldown3_baseline vs buy_and_hold | -19.694% | 1.00000 | 1.00000 | False |
+| heston_jump | production_legacy_cooldown1 vs buy_and_hold | -19.987% | 1.00000 | 1.00000 | False |
+| regime_jump | advanced_adaptive_research vs buy_and_hold | -9.309% | 0.99633 | 1.00000 | False |
+| regime_jump | legacy_confidence_research vs buy_and_hold | -9.880% | 0.99733 | 1.00000 | False |
+| regime_jump | legacy_cooldown3_baseline vs buy_and_hold | -8.449% | 0.99500 | 1.00000 | False |
+| regime_jump | production_legacy_cooldown1 vs buy_and_hold | -8.537% | 0.99567 | 1.00000 | False |
+
+## Factor Attribution (Cross-Sectional)
+
+Cross-sectional regressions decompose path-level return dispersion by score factors. Risk share is a normalized proxy based on coefficient-scaled factor volatility.
+
+| Scenario | Model | Factor | Beta | Alpha Contribution | Risk Share | Model R2 |
+| :--- | :--- | :--- | ---: | ---: | ---: | ---: |
+| heston_jump | advanced_adaptive_research | reversion_mean | +409.65207 | +86.5423% | 42.44% | 0.680 |
+| heston_jump | advanced_adaptive_research | trend_mean | -204.14159 | -42.5895% | 31.22% | 0.680 |
+| heston_jump | advanced_adaptive_research | risk_mean | -507.54260 | -28.0189% | 11.88% | 0.680 |
+| heston_jump | advanced_adaptive_research | regime_mean | -75.51705 | +9.3947% | 5.99% | 0.680 |
+| heston_jump | advanced_adaptive_research | macro_mean | +742.86885 | +85.0522% | 2.67% | 0.680 |
+| heston_jump | advanced_adaptive_research | valuation_mean | +34.85430 | +2.3583% | 2.31% | 0.680 |
+| heston_jump | advanced_adaptive_research | momentum_mean | +37.36584 | -0.6910% | 2.18% | 0.680 |
+| heston_jump | advanced_adaptive_research | uncertainty_mean | +135.65138 | +89.2700% | 1.30% | 0.680 |
+| heston_jump | legacy_confidence_research | reversion_mean | +106.80302 | +22.5630% | 30.98% | 0.634 |
+| heston_jump | legacy_confidence_research | trend_mean | -52.02994 | -10.8549% | 22.28% | 0.634 |
+| heston_jump | legacy_confidence_research | risk_mean | -303.66215 | -16.7637% | 19.91% | 0.634 |
+| heston_jump | legacy_confidence_research | momentum_mean | -92.84657 | +1.7169% | 15.20% | 0.634 |
+| heston_jump | legacy_confidence_research | valuation_mean | -24.97052 | -1.6896% | 4.64% | 0.634 |
+| heston_jump | legacy_confidence_research | regime_mean | -15.34473 | +1.9090% | 3.41% | 0.634 |
+| heston_jump | legacy_confidence_research | macro_mean | -279.50089 | -32.0005% | 2.81% | 0.634 |
+| heston_jump | legacy_confidence_research | uncertainty_mean | +28.85197 | +18.9870% | 0.77% | 0.634 |
+| heston_jump | legacy_cooldown3_baseline | reversion_mean | +140.33526 | +29.6470% | 28.42% | 0.740 |
+| heston_jump | legacy_cooldown3_baseline | risk_mean | -481.24169 | -26.5670% | 22.03% | 0.740 |
+| heston_jump | legacy_cooldown3_baseline | trend_mean | -63.17181 | -13.1794% | 18.89% | 0.740 |
+| heston_jump | legacy_cooldown3_baseline | momentum_mean | -146.55610 | +2.7101% | 16.75% | 0.740 |
+| heston_jump | legacy_cooldown3_baseline | macro_mean | -644.23427 | -73.7594% | 4.52% | 0.740 |
+| heston_jump | legacy_cooldown3_baseline | valuation_mean | -34.66366 | -2.3454% | 4.50% | 0.740 |
+| heston_jump | legacy_cooldown3_baseline | regime_mean | -27.06708 | +3.3673% | 4.20% | 0.740 |
+| heston_jump | legacy_cooldown3_baseline | uncertainty_mean | +36.74157 | +24.1790% | 0.69% | 0.740 |
+| heston_jump | production_legacy_cooldown1 | reversion_mean | +133.43327 | +28.1889% | 25.80% | 0.717 |
+| heston_jump | production_legacy_cooldown1 | risk_mean | -506.76692 | -27.9761% | 22.15% | 0.717 |
+| heston_jump | production_legacy_cooldown1 | trend_mean | -66.64060 | -13.9030% | 19.03% | 0.717 |
+| heston_jump | production_legacy_cooldown1 | momentum_mean | -160.52517 | +2.9684% | 17.52% | 0.717 |
+| heston_jump | production_legacy_cooldown1 | valuation_mean | -63.44481 | -4.2928% | 7.86% | 0.717 |
+| heston_jump | production_legacy_cooldown1 | macro_mean | -742.57001 | -85.0180% | 4.98% | 0.717 |
+| heston_jump | production_legacy_cooldown1 | regime_mean | +12.02242 | -1.4956% | 1.78% | 0.717 |
+| heston_jump | production_legacy_cooldown1 | uncertainty_mean | +49.84061 | +32.7993% | 0.89% | 0.717 |
+| regime_jump | advanced_adaptive_research | reversion_mean | +369.40372 | +93.0337% | 43.60% | 0.574 |
+| regime_jump | advanced_adaptive_research | trend_mean | -185.73857 | -49.2257% | 33.05% | 0.574 |
+| regime_jump | advanced_adaptive_research | risk_mean | -393.61628 | -26.1999% | 10.87% | 0.574 |
+| regime_jump | advanced_adaptive_research | regime_mean | -57.11256 | +4.5840% | 5.31% | 0.574 |
+| regime_jump | advanced_adaptive_research | macro_mean | +580.42661 | +67.6585% | 2.64% | 0.574 |
+| regime_jump | advanced_adaptive_research | momentum_mean | +39.00446 | -2.1529% | 2.64% | 0.574 |
+| regime_jump | advanced_adaptive_research | valuation_mean | +12.81858 | +1.3794% | 1.00% | 0.574 |
+| regime_jump | advanced_adaptive_research | uncertainty_mean | +79.42765 | +52.4382% | 0.90% | 0.574 |
+| regime_jump | legacy_confidence_research | reversion_mean | +93.05625 | +23.4361% | 31.05% | 0.596 |
+| regime_jump | legacy_confidence_research | trend_mean | -41.06496 | -10.8833% | 20.65% | 0.596 |
+| regime_jump | legacy_confidence_research | risk_mean | -243.07527 | -16.1796% | 18.97% | 0.596 |
+| regime_jump | legacy_confidence_research | momentum_mean | -72.19241 | +3.9848% | 13.81% | 0.596 |
+| regime_jump | legacy_confidence_research | regime_mean | -31.11035 | +2.4970% | 8.17% | 0.596 |
+| regime_jump | legacy_confidence_research | macro_mean | -291.86637 | -34.0219% | 3.75% | 0.596 |
+| regime_jump | legacy_confidence_research | valuation_mean | -10.02771 | -1.0791% | 2.20% | 0.596 |
+| regime_jump | legacy_confidence_research | uncertainty_mean | +43.16008 | +28.4943% | 1.39% | 0.596 |
+| regime_jump | legacy_cooldown3_baseline | reversion_mean | +191.47143 | +48.2217% | 37.30% | 0.659 |
+| regime_jump | legacy_cooldown3_baseline | trend_mean | -86.20995 | -22.8480% | 25.31% | 0.659 |
+| regime_jump | legacy_cooldown3_baseline | risk_mean | -395.09941 | -26.2986% | 18.00% | 0.659 |
+| regime_jump | legacy_cooldown3_baseline | momentum_mean | -69.97024 | +3.8621% | 7.82% | 0.659 |
+| regime_jump | legacy_cooldown3_baseline | regime_mean | -44.21514 | +3.5488% | 6.78% | 0.659 |
+| regime_jump | legacy_cooldown3_baseline | macro_mean | -404.78789 | -47.1848% | 3.04% | 0.659 |
+| regime_jump | legacy_cooldown3_baseline | valuation_mean | -10.63440 | -1.1443% | 1.36% | 0.659 |
+| regime_jump | legacy_cooldown3_baseline | uncertainty_mean | +20.68141 | +13.6539% | 0.39% | 0.659 |
+| regime_jump | production_legacy_cooldown1 | reversion_mean | +194.77116 | +49.0528% | 36.11% | 0.628 |
+| regime_jump | production_legacy_cooldown1 | trend_mean | -88.83732 | -23.5443% | 24.83% | 0.628 |
+| regime_jump | production_legacy_cooldown1 | risk_mean | -439.42766 | -29.2492% | 19.06% | 0.628 |
+| regime_jump | production_legacy_cooldown1 | momentum_mean | -83.16999 | +4.5907% | 8.84% | 0.628 |
+| regime_jump | production_legacy_cooldown1 | regime_mean | -35.28210 | +2.8318% | 5.15% | 0.628 |
+| regime_jump | production_legacy_cooldown1 | macro_mean | -414.32961 | -48.2971% | 2.96% | 0.628 |
+| regime_jump | production_legacy_cooldown1 | valuation_mean | -19.52602 | -2.1012% | 2.38% | 0.628 |
+| regime_jump | production_legacy_cooldown1 | uncertainty_mean | +37.68376 | +24.8789% | 0.67% | 0.628 |
 
 ## Sensitivity Surface
 
@@ -105,6 +208,7 @@ The 3D surface maps expected production-model return as drift and volatility are
 ## Figures
 
 - Fan chart: `reports/stochastic/figures/stochastic_fan_chart.html`
+- Heston fan chart: `reports/stochastic/figures/stochastic_heston_fan_chart.html`
 - 3D surface: `reports/stochastic/figures/stochastic_surface_3d.html`
 - 3D scatter: `reports/stochastic/figures/stochastic_scatter_3d.html`
 - Regime heatmap: `reports/stochastic/figures/regime_transition_heatmap.html`
@@ -112,4 +216,6 @@ The 3D surface maps expected production-model return as drift and volatility are
 ## Notes
 
 - Synthetic features are rebuilt path-by-path, then scored and executed by the same strategy code used in backtests.
+- Bayesian credible intervals quantify uncertainty in outperform probability vs Buy and Hold.
+- White RC + Holm adjustment control data-mining bias across multiple candidate models.
 - Results are scenario evidence and should be combined with walk-forward gate decisions before production promotion.

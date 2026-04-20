@@ -1,16 +1,14 @@
 # Bitcoin Quant Project
 
-Systematic Bitcoin allocation pipeline with daily forward testing, cost-aware research backtests, and auditable accounting.
+Systematic Bitcoin allocation pipeline with forward testing first, honest backtesting, and auditable quantitative governance.
 
-## Forward Testing First
+## 1) Forward Test Results
 
-This repository is operated with forward testing as the primary source of truth.
+Primary live metric:
 
-- Objective: maximize long-horizon BTC yield through systematic allocation.
-- Current mode: paper trading with real daily data flow.
-- Benchmark: Alpha vs BTC (strategy ROI minus BTC buy-and-hold ROI over the same period).
-
-The section below is updated automatically by the daily pipeline.
+$$
+\alpha_{BTC} = ROI_{strategy} - ROI_{buy\&hold}
+$$
 
 <!-- live-stats:start -->
 ## Forward Testing Snapshot
@@ -29,187 +27,351 @@ The section below is updated automatically by the daily pipeline.
 > **Status**: Active | Drawdown
 <!-- live-stats:end -->
 
-## Current Production Configuration
+## 2) Backtest Results
 
-As of 2026-04-20:
+Backtest version currently in use is the honest configuration:
 
-- Live model selection source: `data/signals/production_gate.json` (objective OOS gate artifact)
-- Fallback when gate file is missing/invalid: `production_legacy_cooldown1`
-- Current fallback profile:
-  - Scoring mode: `QuantScorer(mode="quant")`
-  - Allocation engine: `PortfolioManager`
-  - Cooldown: `1 day`
-- Promotion policy: challengers are promoted only when objective OOS criteria are met
+- signal generated on close of day t
+- execution at open of day t+1
+- cost-aware accounting (transaction cost + debt carry)
+- advanced scorer calibration cutoff before test start (no future leakage)
 
-Implementation reference:
+Latest run metadata:
 
+- generated on: 2026-04-20
+- warm-up start: 2018-01-01
+- backtest start: 2021-01-01
+- backtest end: 2026-04-20
+- trading cost: 15 bps per side
+- debt interest: 10% annual
+
+### 2.1 Backtest Model Comparison
+
+| Model | Total Return | CAGR | Max Drawdown | Sharpe | Sortino | Calmar | Volatility | Trades | Avg Lev | Max Lev |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| legacy_signal + legacy_allocation(cooldown=3) | +743.41% | +49.54% | -30.29% | 1.228 | 1.765 | 1.636 | 38.88% | 102 | 0.61x | 1.00x |
+| legacy_signal + legacy_allocation(cooldown=1) | +764.73% | +50.25% | -30.87% | 1.241 | 1.785 | 1.628 | 38.86% | 113 | 0.61x | 1.00x |
+| advanced_signal + legacy_allocation(cooldown=3) | +58.35% | +9.06% | -32.47% | 0.590 | 0.826 | 0.279 | 17.20% | 48 | 0.31x | 0.55x |
+| advanced_signal + adaptive_allocation | +44.11% | +7.14% | -34.92% | 0.469 | 0.565 | 0.204 | 18.27% | 1113 | 0.25x | 0.63x |
+| legacy_signal + confidence_allocation | +539.97% | +41.95% | -24.00% | 1.298 | 1.805 | 1.748 | 30.58% | 346 | 0.45x | 0.93x |
+
+### 2.2 Buy and Hold Benchmark
+
+| Metric | Value |
+| :--- | ---: |
+| Total Return | +154.73% |
+| CAGR | +19.30% |
+| Max Drawdown | -76.63% |
+| Sharpe | 0.590 |
+
+References:
+
+- `docs/backtesting-reports/walkforward_analysis.md`
+- `docs/backtesting-reports/backtest_summary.md`
+- `tests/backtest/model_comparison.csv`
+- `tests/backtest/walkforward_results.csv`
+
+## 3) Technical Presentation (English)
+
+This section is the English version of the technical presentation currently maintained in `apresentação.md`.
+
+### 3.1 System Objective
+
+The engine targets long-horizon BTC allocation with:
+
+- long-run BTC and USD capital growth;
+- drawdown control via dynamic allocation rules;
+- reproducible and auditable decision logic;
+- production promotion only with objective out-of-sample evidence.
+
+Main operational metric:
+
+$$
+\alpha_{BTC} = ROI_{strategy} - ROI_{buy\&hold}
+$$
+
+### 3.2 Functional Architecture
+
+Pipeline layers:
+
+1. Data ingestion: price, on-chain, macro, sentiment, derivatives.
+2. Feature processing: normalization, market regime flags.
+3. Quant scoring: Long Term (LT) and Medium Term (MT) signals.
+4. Signal-to-order translation via allocation engines.
+5. Cost-aware execution simulation.
+6. Accounting and reporting.
+7. Production governance gate from OOS validation.
+
+Core files:
+
+- `src/strategy/score.py`
+- `src/strategy/legacy_score.py`
+- `src/strategy/process_data.py`
+- `src/execution/portfolio_manager.py`
+- `src/execution/confidence_portfolio_manager.py`
+- `src/execution/advanced_portfolio_manager.py`
+- `src/execution/accounting.py`
 - `src/execution/production_gate.py`
 - `src/main_paper_trading.py`
 
-## Validation Stack
+### 3.3 Daily Production Flow
 
-Forward testing is primary. Backtests are used as secondary evidence for model promotion.
+Execution sequence:
 
-## Quantitative Scoring Core
+1. `download`
+2. `process`
+3. `paper`
 
-The main scoring method is now designed as an adaptive quantitative engine, not a static rule set.
+The paper trading run:
 
-- Robust normalization: each feature is standardized with rolling historical median/MAD from `data/processed`.
-- Regime posterior: long-term direction is estimated with a Bayesian-style posterior (prior by cycle state + evidence blocks).
-- Uncertainty control: entropy, block disagreement, and data coverage are combined into an explicit uncertainty penalty.
-- Risk-adjusted edge: final scores are produced from edge minus uncertainty/volatility pressure, improving behavior under regime shifts.
+- resolves active model from `data/signals/production_gate.json`;
+- instantiates scorer and allocation engine;
+- computes LT/MT and decides `BUY`, `SELL`, or no action;
+- applies accounting with debt carry and updates reports.
 
-Implementation reference:
+Safe fallback if gate file is missing/invalid:
 
-- `src/strategy/score.py`
-- `src/strategy/process_data.py`
+- `production_legacy_cooldown1`
 
-### 1. Cost-Aware Model Comparison
+### 3.4 Quantitative Signal Block
 
-- Includes transaction costs and debt carry.
-- Latest primary result summary:
-  - Buy and Hold total return: +63.53%
-  - Production total return: +439.54%
-  - Buy and Hold max drawdown: -66.89%
-  - Production max drawdown: -29.12%
+#### 3.4.1 QuantScorer(mode="quant")
 
-Detailed report: `docs/backtesting-reports/backtest_summary.md`
+Main mathematical components:
 
-### 2. Regime Robustness
+1. Robust normalization with historical median/MAD.
+2. Evidence blocks (valuation, macro, trend, volatility) weighted by data reliability.
+3. Bayesian-style regime posterior (cycle prior + likelihood from blocks).
+4. Explicit uncertainty penalty before final edge scoring.
 
-Subperiods tested: Bull 2021, Bear 2021-2022, Recovery 2022-2024, Post-Halving 2024-2026.
+Robust feature normalization:
 
-Latest summary:
+$$
+z_i^{rob} = \frac{x_i - median_i}{1.4826 \cdot MAD_i}
+$$
 
-- Production beat Buy and Hold in return on 2/4 regimes.
-- Production beat Buy and Hold in Sharpe on 2/4 regimes.
-- Production had lower drawdown on 3/4 regimes.
+Regime posterior:
 
-Detailed report: `docs/backtesting-reports/subperiod_analysis.md`
+$$
+p_{bull} = \sigma\left(logit_{prior}(cycle) + logit_{likelihood}(valuation, macro, trend, flags)\right)
+$$
 
-### 3. Walk-Forward (Purged + Embargo)
+Uncertainty penalty:
 
-Latest configuration:
+$$
+U = 0.45\,H(p_{bull}) + 0.35\,dispersion(signals) + 0.20\,(1-coverage)
+$$
 
-- Train window: 540 days
-- Test window: 120 days
-- Purge gap: 7 days
-- Embargo gap: 3 days
-- Fold step: auto-selected from `{60, 45, 30, 20, 15}` to reach minimum fold coverage
-- Target minimum folds: 28
-- Bootstrap method: block bootstrap (default) with configurable block length
+Final LT score:
 
-Gate artifact generated by walk-forward:
+$$
+Score_{LT} = 100 \cdot \tanh\left(1.55 \cdot (Edge - 0.35U - 0.20\,VolPressure)\right)
+$$
 
-- `data/signals/production_gate.json`
+Final MT score:
 
-Latest out-of-sample aggregate:
+$$
+Score_{MT} = 100 \cdot clip\left(Base_{MT} \cdot (0.60 + 0.50\,Confidence), -1, 1\right)
+$$
 
-| Model | Mean OOS Return | Mean OOS Sharpe | Worst Max DD | Return > BnH Folds | Decision |
-| :--- | ---: | ---: | ---: | ---: | :--- |
-| `production_legacy_cooldown1` | +20.31% | 1.342 | -20.09% | 11/22 | implement with guardrails |
-| `legacy_cooldown3_baseline` | +20.31% | 1.323 | -20.09% | 11/22 | keep baseline |
-| `legacy_confidence_research` | +20.28% | 1.338 | -20.04% | 13/22 | secondary candidate |
-| `advanced_adaptive_research` | +9.44% | 1.015 | -22.73% | 9/22 | do not implement |
+#### 3.4.2 LegacyQuantScorer Baseline
 
-Bootstrap significance (3,000 resamples on OOS daily returns):
+The legacy baseline remains available for A/B comparison and promotion governance.
 
-| Comparison | Annualized Alpha | Alpha 95% CI | p(alpha <= 0) | Delta Sharpe | Delta Sharpe 95% CI | p(delta_sharpe <= 0) |
-| :--- | ---: | :--- | ---: | ---: | :--- | ---: |
-| Production vs Baseline | +0.05% | [-1.51%, +1.55%] | 0.4805 | -0.002 | [-0.046, +0.040] | 0.5322 |
-| Production vs Buy and Hold | +13.26% | [-2.59%, +29.82%] | 0.0510 | +0.607 | [+0.283, +0.941] | 0.0010 |
-| Confidence vs Production | -0.11% | [-0.49%, +0.29%] | 0.7044 | +0.003 | [-0.007, +0.013] | 0.2986 |
+General form:
 
-Detailed report: `docs/backtesting-reports/walkforward_analysis.md`
+$$
+Score_{LT} = 100 \cdot (w_1 \cdot OnChain + w_2 \cdot Cycle + w_3 \cdot Macro)
+$$
 
-### 4. Cost + Transition Robustness Stress
+$$
+Score_{MT} = 100 \cdot (v_1 \cdot Trend + v_2 \cdot Sentiment + v_3 \cdot Extension + v_4 \cdot Seasonality)
+$$
 
-- Full-sample cost stress scenarios with varying transaction cost and debt carry.
-- Transition-window stress around major regime boundaries.
+### 3.5 Allocation Engines
 
-Detailed report: `docs/backtesting-reports/robustness_analysis.md`
+#### 3.5.1 PortfolioManager
 
-### 5. Stochastic Calculus Validation (Monte Carlo + 3D)
+Converts LT/MT into target allocation with hysteresis and cooldown controls.
 
-- Regime-switching jump-diffusion Monte Carlo stress test on the full execution stack.
-- Rebuilds synthetic feature tensors per path and re-runs strategy scoring + allocation + accounting dynamics.
-- Produces 3D sensitivity and distribution visualizations for drift/volatility stress.
+Main behaviors:
 
-Detailed report: `docs/backtesting-reports/stochastic_validation.md`
+- super-bull: can scale up to 2x leverage;
+- strong-buy: 100% BTC target;
+- defensive-bear: 10% moonbag floor;
+- extreme-bear: full exit.
 
-## Runbook
+#### 3.5.2 ConfidencePortfolioManager
 
-### Local commands
+Research allocation engine with:
+
+- confidence-weighted LT/MT blending;
+- regime-dependent risk budget;
+- adaptive threshold and cooldown by confidence.
+
+Simplified notation:
+
+$$
+Target_{adj} = Current + \gamma(Confidence, RiskBudget) \cdot (Target_{raw} \cdot RiskBudget - Current)
+$$
+
+### 3.6 Simulator and Accounting
+
+`PortfolioSimulator` models:
+
+- transaction costs in bps;
+- debt financing with daily carry;
+- trade-to-equity accounting impacts;
+- daily equity path and risk metrics.
+
+Reported metrics include:
+
+- total return, CAGR, max drawdown;
+- Sharpe, Sortino, Calmar;
+- annualized volatility;
+- turnover, trades/year, average and max leverage.
+
+### 3.7 Production Promotion Governance
+
+Promotion is objective-driven via:
+
+- purged+embargo walk-forward validation;
+- minimum fold coverage;
+- bootstrap significance checks on OOS daily returns;
+- gate artifact at `data/signals/production_gate.json`.
+
+### 3.8 Stochastic Validation Layer
+
+Main module:
+
+- `tests/backtest/stochastic_calculus_validation.py`
+
+#### 3.8.1 Stochastic Model
+
+Regime-switching jump-diffusion:
+
+$$
+dS_t = \mu_{r_t} S_t dt + \sigma_{r_t} S_t dW_t + S_t (e^{J_t} - 1) dN_t
+$$
+
+with:
+
+- Markov regime process $r_t$;
+- Brownian diffusion $W_t$;
+- Poisson jump arrivals $N_t$;
+- Gaussian jump sizes $J_t$.
+
+#### 3.8.2 End-to-End Monte Carlo Validation
+
+For each path:
+
+1. reconstruct synthetic feature tensors;
+2. recompute scores;
+3. rerun allocation engines;
+4. collect return and risk distributions by model.
+
+#### 3.8.3 Generated Visual Outputs
+
+- `reports/stochastic/figures/stochastic_fan_chart.html`
+- `reports/stochastic/figures/stochastic_heston_fan_chart.html`
+- `reports/stochastic/figures/stochastic_surface_3d.html`
+- `reports/stochastic/figures/stochastic_scatter_3d.html`
+- `reports/stochastic/figures/regime_transition_heatmap.html`
+- `docs/backtesting-reports/stochastic_validation.md`
+
+#### 3.8.4 Quantitative Summary (Latest)
+
+Regime jump scenario (220 paths):
+
+| Model | Mean Return | VaR 95% | CVaR 95% | Mean Max DD | P(Beat BnH) |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| production_legacy_cooldown1 | +2.87% | -19.39% | -25.47% | -11.94% | 56.82% |
+| legacy_cooldown3_baseline | +2.96% | -16.24% | -22.57% | -11.33% | 55.91% |
+| legacy_confidence_research | +1.53% | -8.56% | -11.31% | -6.18% | 53.18% |
+| advanced_adaptive_research | +2.10% | -13.95% | -20.36% | -9.25% | 54.09% |
+
+Heston jump scenario (140 paths):
+
+| Model | Mean Return | VaR 95% | CVaR 95% | Mean Max DD | P(Beat BnH) | Bayesian 95% CI |
+| :--- | ---: | ---: | ---: | ---: | ---: | :--- |
+| production_legacy_cooldown1 | +4.23% | -22.21% | -27.66% | -11.47% | 47.14% | [39.03%, 55.40%] |
+| legacy_cooldown3_baseline | +4.52% | -22.40% | -25.57% | -11.01% | 45.00% | [37.02%, 53.35%] |
+| legacy_confidence_research | +2.33% | -10.30% | -12.82% | -5.91% | 41.43% | [33.61%, 49.74%] |
+| advanced_adaptive_research | +2.43% | -21.37% | -27.92% | -9.24% | 46.43% | [38.38%, 54.64%] |
+
+#### 3.8.5 Multiple-Testing Control
+
+The stochastic layer includes White Reality Check-style bootstrap tests and Holm correction.
+
+Latest interpretation:
+
+- no model rejected $H_0: \alpha \le 0$ at 5% after Holm correction.
+
+#### 3.8.6 Factor Attribution
+
+Cross-sectional attribution includes:
+
+- valuation, macro, trend, regime,
+- uncertainty, momentum, reversion, risk.
+
+Latest highlight for `advanced_adaptive_research`:
+
+- top risk contributor in both scenarios: `reversion_mean`
+- second contributor: `trend_mean`
+
+### 3.9 Quantitative Interpretation Guide
+
+Practical reading rules:
+
+1. High mean return with very negative CVaR means heavy left-tail risk.
+2. $P(Beat\ BnH) > 50\%$ indicates probabilistic dominance, not certainty.
+3. 3D surfaces reveal sensitivity to drift and volatility assumptions.
+4. 3D scatter identifies favorable vs hostile risk-regime clusters.
+
+### 3.10 Limitations and Cautions
+
+- Synthetic feature reconstruction preserves macro structure, not full market microstructure.
+- Gaussian jumps still understate real extreme-tail behavior.
+- Stochastic evidence complements, but does not replace, strict OOS and live forward testing.
+
+### 3.11 Quantitative Roadmap
+
+Completed in this iteration:
+
+1. Heston-style stochastic-volatility scenario with jumps. [OK]
+2. Multiple-testing control (White RC + Holm). [OK]
+3. Bayesian credible intervals for outperform probability. [OK]
+4. Factor attribution by score component. [OK]
+
+Next steps:
+
+1. explicit HMM latent-state inference layer;
+2. dedicated GARCH volatility forecast layer;
+3. full SPA/White family expansion in daily walk-forward governance.
+
+### 3.12 Reproduction Commands
 
 ```bash
-make install
-make status
-make run
-make paper
-make dashboard
 make backtest
 make backtest-subperiod
 make backtest-walkforward
 make backtest-robustness
 make backtest-stochastic
-make backtest-all
-make test
 ```
 
-### CLI shortcuts
+Direct stochastic run:
 
 ```bash
-python main.py status --json
-python main.py download --strict
-python main.py process
-python main.py paper
-python main.py full --strict
-python main.py dashboard --port 5000
-python tests/backtest/compare_models.py
-python tests/backtest/subperiod_analysis.py
-python tests/backtest/walkforward_analysis.py
-python tests/backtest/robustness_analysis.py
 python tests/backtest/stochastic_calculus_validation.py
 ```
 
-### Required secret
+### 3.13 Conclusion
 
-Create `.env` from `.env.example` and set:
+The current system combines:
 
-```bash
-FRED_API_KEY=your_fred_api_key_here
-```
+- robust quantitative inference,
+- statistical governance for production promotion,
+- honest historical OOS validation,
+- and multi-regime stochastic stress testing with advanced visualization.
 
-## Daily Automation (GitHub Actions)
-
-Two workflows are included:
-
-- CI: syntax checks, unit tests, and health checks on push and pull request.
-- Daily pipeline: runs download -> process -> paper, uploads artifacts, and commits generated outputs.
-
-The daily workflow updates:
-
-- `README.md` live forward-testing block
-- `latest_report.md`
-- `reports/daily/*`
-- `data/raw/*`, `data/processed/*`, `data/signals/*`, `data/accounting/*`
-
-To enable the daily workflow:
-
-- Add `FRED_API_KEY` under repository secrets, or
-- Add `FRED_API_KEY` to a GitHub Environment and set `WORKFLOW_ENVIRONMENT` repository variable.
-
-## Roadmap
-
-Near-term priorities (implemented):
-
-1. Increase out-of-sample fold coverage and statistical power.
-  - Implemented via adaptive fold-step selection and block bootstrap significance in `tests/backtest/walkforward_analysis.py`.
-2. Improve confidence-based allocation and retest against production baseline.
-  - Implemented via upgraded confidence allocator logic in `src/execution/confidence_portfolio_manager.py` and existing backtest harness coverage.
-3. Expand robustness checks for execution costs and regime transitions.
-  - Implemented via `tests/backtest/robustness_analysis.py` and report output `docs/backtesting-reports/robustness_analysis.md`.
-4. Keep production changes gated by objective out-of-sample criteria.
-  - Implemented via gate artifact `data/signals/production_gate.json` consumed by `src/main_paper_trading.py`.
-5. Add stochastic-calculus stress testing with advanced visualization.
-  - Implemented via `tests/backtest/stochastic_calculus_validation.py` and report output `docs/backtesting-reports/stochastic_validation.md`.
+This turns the strategy from heuristic rules into a disciplined, auditable, and reproducible quantitative process.

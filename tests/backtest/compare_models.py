@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import sys
 
@@ -22,8 +22,15 @@ from tests.backtest.data_loader import BacktestDataLoader
 
 INITIAL_CAPITAL = 10_000.0
 START_DATE = "2021-01-01"
+WARMUP_START_DATE = "2018-01-01"
+END_DATE = "2026-04-20"
 TRADING_COST_BPS = 15.0
 ANNUAL_DEBT_RATE = 0.10
+
+EXECUTION_POLICY = "signal_on_close_execute_next_open"
+CALIBRATION_CUTOFF_DATE = (
+    datetime.strptime(START_DATE, "%Y-%m-%d") - timedelta(days=1)
+).strftime("%Y-%m-%d")
 
 SUMMARY_PATH = Path("docs/backtesting-reports/backtest_summary.md")
 CSV_PATH = Path("tests/backtest/model_comparison.csv")
@@ -92,6 +99,7 @@ class PortfolioSimulator:
         btc = 0.0
         debt = 0.0
         last_trade_date = None
+        pending_order = None
 
         equities = []
         leverages = []
@@ -101,28 +109,20 @@ class PortfolioSimulator:
         trades = 0
         prev_equity = INITIAL_CAPITAL
 
-        for day in daily_data:
-            price = float(day["market_data"]["current_price"])
+        for idx, day in enumerate(daily_data):
+            close_price = float(day["market_data"]["current_price"])
+            open_price = float(day["market_data"].get("open_price", close_price))
             date_str = day["timestamp"][:10]
 
             if debt > 0:
                 debt *= 1.0 + (self.annual_debt_rate / 365.0)
 
-            scores = scorer.calculate_scores(day)["scores"]
-            order = manager.calculate_order(
-                scores=scores,
-                current_cash=cash,
-                current_btc_value=btc * price,
-                current_debt=debt,
-                last_trade_date=last_trade_date,
-                current_date=date_str,
-            )
-
-            if order is not None:
+            # Honest execution: use next-open fills for orders generated at prior close.
+            if pending_order is not None:
                 cash, btc, debt, traded_notional = self._execute_order(
-                    order.side,
-                    order.amount_usd,
-                    price,
+                    pending_order.side,
+                    pending_order.amount_usd,
+                    open_price,
                     cash,
                     btc,
                     debt,
@@ -132,13 +132,27 @@ class PortfolioSimulator:
                     turnover += traded_notional
                     last_trade_date = date_str
 
-            equity = cash + (btc * price) - debt
+            pending_order = None
+            has_next_day = idx < (len(daily_data) - 1)
+            if has_next_day:
+                next_date_str = daily_data[idx + 1]["timestamp"][:10]
+                scores = scorer.calculate_scores(day)["scores"]
+                pending_order = manager.calculate_order(
+                    scores=scores,
+                    current_cash=cash,
+                    current_btc_value=btc * close_price,
+                    current_debt=debt,
+                    last_trade_date=last_trade_date,
+                    current_date=next_date_str,
+                )
+
+            equity = cash + (btc * close_price) - debt
             equity = max(equity, 1e-9)
 
             daily_ret = (equity / prev_equity) - 1.0 if prev_equity > 0 else 0.0
             prev_equity = equity
 
-            leverage = ((btc * price) + debt) / equity if equity > 0 else 0.0
+            leverage = ((btc * close_price) + debt) / equity if equity > 0 else 0.0
 
             equities.append(equity)
             leverages.append(leverage)
@@ -196,11 +210,13 @@ class PortfolioSimulator:
 
 
 def buy_and_hold_metrics(daily_data):
-    prices = [float(day["market_data"]["current_price"]) for day in daily_data]
-    if not prices:
+    if not daily_data:
         raise RuntimeError("Backtest dataset is empty.")
 
-    units = INITIAL_CAPITAL / prices[0]
+    prices = [float(day["market_data"]["current_price"]) for day in daily_data]
+    entry_price = float(daily_data[0]["market_data"].get("open_price", prices[0]))
+
+    units = INITIAL_CAPITAL / entry_price
     equities = [units * p for p in prices]
     returns = pd.Series(equities).pct_change().dropna()
 
@@ -270,9 +286,13 @@ def write_outputs(results_df, buy_hold, recommendations):
     md.append("")
     md.append("## Configuration")
     md.append(f"- Initial capital: `${INITIAL_CAPITAL:,.2f}`")
+    md.append(f"- Warm-up start date: `{WARMUP_START_DATE}`")
     md.append(f"- Start date: `{START_DATE}`")
+    md.append(f"- End date: `{END_DATE}`")
     md.append(f"- Trading cost: `{TRADING_COST_BPS:.2f}` bps per side")
     md.append(f"- Debt interest: `{ANNUAL_DEBT_RATE * 100:.2f}%` annual")
+    md.append(f"- Execution policy: `{EXECUTION_POLICY}`")
+    md.append(f"- Advanced calibration cutoff: `{CALIBRATION_CUTOFF_DATE}`")
     md.append("")
     md.append("## Model Comparison")
     md.append("")
@@ -316,9 +336,10 @@ def write_outputs(results_df, buy_hold, recommendations):
 
 
 def run_model_comparison():
-    loader = BacktestDataLoader(start_date=START_DATE)
+    loader = BacktestDataLoader(start_date=WARMUP_START_DATE, end_date=END_DATE)
     loader.fetch_data()
-    daily_data = list(loader.generator())
+    full_daily_data = list(loader.generator())
+    daily_data = [day for day in full_daily_data if day["timestamp"][:10] >= START_DATE]
 
     simulator = PortfolioSimulator()
 
@@ -335,12 +356,12 @@ def run_model_comparison():
         ),
         (
             "advanced_signal + legacy_allocation(cooldown=3)",
-            AdvancedQuantScorer(),
+            AdvancedQuantScorer(calibrator_max_date=CALIBRATION_CUTOFF_DATE),
             PortfolioManager(min_trade_usd=20.0, cooldown_days=3),
         ),
         (
             "advanced_signal + adaptive_allocation",
-            AdvancedQuantScorer(),
+            AdvancedQuantScorer(calibrator_max_date=CALIBRATION_CUTOFF_DATE),
             AdvancedPortfolioManager(min_trade_usd=20.0, cooldown_days=1),
         ),
         (

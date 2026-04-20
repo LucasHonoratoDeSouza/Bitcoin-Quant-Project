@@ -32,6 +32,7 @@ DT = 1.0 / TRADING_DAYS
 
 N_PATHS = 220
 HORIZON_DAYS = 180
+HESTON_PATHS = 140
 
 GRID_DRIFT_SCALES = np.linspace(0.60, 1.50, 7)
 GRID_VOL_SCALES = np.linspace(0.70, 1.80, 7)
@@ -40,10 +41,15 @@ GRID_HORIZON_DAYS = 120
 
 COST_BPS = 15.0
 ANNUAL_DEBT_RATE = 0.10
+WHITE_RC_BOOTSTRAPS = 3000
+BAYESIAN_DRAWS = 30_000
 
 PATH_RESULTS_CSV = Path("tests/backtest/stochastic_path_results.csv")
 SUMMARY_CSV = Path("tests/backtest/stochastic_summary.csv")
 GRID_CSV = Path("tests/backtest/stochastic_surface_grid.csv")
+HYPOTHESIS_CSV = Path("tests/backtest/stochastic_hypothesis_tests.csv")
+FACTOR_ATTRIBUTION_CSV = Path("tests/backtest/stochastic_factor_attribution.csv")
+HESTON_SUMMARY_CSV = Path("tests/backtest/stochastic_heston_summary.csv")
 REPORT_MD = Path("docs/backtesting-reports/stochastic_validation.md")
 FIGURES_DIR = Path("reports/stochastic/figures")
 
@@ -55,6 +61,59 @@ def _safe_float(value, default=0.0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return float(default)
+
+
+def _beta_credible_interval(
+    successes: int,
+    trials: int,
+    alpha: float = 0.05,
+    draws: int = BAYESIAN_DRAWS,
+    seed: int = 17,
+) -> tuple[float, float, float]:
+    if trials <= 0:
+        return 0.0, 0.0, 0.0
+
+    rng = np.random.default_rng(seed + successes + (13 * trials))
+    samples = rng.beta(1 + int(successes), 1 + int(trials - successes), size=draws)
+    low = float(np.quantile(samples, alpha / 2.0))
+    high = float(np.quantile(samples, 1.0 - (alpha / 2.0)))
+    mean = float(samples.mean())
+    return low, high, mean
+
+
+def _white_reality_check_pvalue(diff: np.ndarray, bootstraps: int = WHITE_RC_BOOTSTRAPS, seed: int = 1234) -> float:
+    diff = np.asarray(diff, dtype=float)
+    diff = diff[np.isfinite(diff)]
+    if diff.size < 8:
+        return 1.0
+
+    observed = float(np.mean(diff))
+    # Null-centered bootstrap for one-sided outperform test.
+    centered = diff - observed
+
+    rng = np.random.default_rng(seed)
+    sampled_idx = rng.integers(0, diff.size, size=(bootstraps, diff.size))
+    boot_means = centered[sampled_idx].mean(axis=1)
+    p_value = (1.0 + float(np.sum(boot_means >= observed))) / float(bootstraps + 1)
+    return max(0.0, min(1.0, p_value))
+
+
+def _holm_adjustment(named_pvalues: list[tuple[str, float]]) -> dict[str, float]:
+    if not named_pvalues:
+        return {}
+
+    sorted_pairs = sorted(named_pvalues, key=lambda item: item[1])
+    m = len(sorted_pairs)
+    adjusted = {}
+    running_max = 0.0
+
+    for idx, (name, pval) in enumerate(sorted_pairs):
+        holm = (m - idx) * float(pval)
+        holm = min(1.0, holm)
+        running_max = max(running_max, holm)
+        adjusted[name] = running_max
+
+    return adjusted
 
 
 def _load_processed_daily_data() -> list[dict]:
@@ -256,6 +315,73 @@ def simulate_regime_jump_diffusion(
     return prices, regimes
 
 
+def simulate_heston_jump_diffusion(
+    params: dict,
+    s0: float,
+    n_paths: int,
+    horizon_days: int,
+    seed: int,
+    drift_scale: float = 1.0,
+    vol_scale: float = 1.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Heston-style stochastic variance with jump component.
+
+    This is a roadmap expansion to stress-test model robustness under
+    volatility-of-volatility and leverage-effect dynamics.
+    """
+    rng = np.random.default_rng(seed)
+
+    mu = float(params["historical_mu"]) * float(drift_scale)
+    base_sigma = max(float(params["historical_sigma"]) * float(vol_scale), 0.05)
+
+    theta = max(base_sigma**2, 1e-4)
+    v0 = theta
+    kappa = 2.2
+    vol_of_vol = 0.55 * float(vol_scale)
+    rho = -0.42
+
+    jump_lambda = float(params["jump_lambda"]) * max(0.35, float(vol_scale))
+    jump_mu = float(params["jump_mu"])
+    jump_sigma = float(params["jump_sigma"]) * max(0.5, float(vol_scale))
+
+    prices = np.zeros((n_paths, horizon_days + 1), dtype=float)
+    variances = np.zeros((n_paths, horizon_days + 1), dtype=float)
+
+    prices[:, 0] = float(s0)
+    variances[:, 0] = float(v0)
+
+    rho_orth = math.sqrt(max(1e-8, 1.0 - (rho**2)))
+
+    for t in range(horizon_days):
+        z1 = rng.standard_normal(n_paths)
+        z2 = rng.standard_normal(n_paths)
+
+        z_price = z1
+        z_var = (rho * z1) + (rho_orth * z2)
+
+        v_prev = np.maximum(variances[:, t], 1e-8)
+        v_next = (
+            v_prev
+            + (kappa * (theta - v_prev) * DT)
+            + (vol_of_vol * np.sqrt(v_prev) * math.sqrt(DT) * z_var)
+        )
+        v_next = np.maximum(v_next, 1e-8)
+        variances[:, t + 1] = v_next
+
+        jump_counts = rng.poisson(jump_lambda * DT, size=n_paths)
+        jump_term = np.zeros(n_paths, dtype=float)
+        jump_indices = np.where(jump_counts > 0)[0]
+        for idx in jump_indices:
+            count = int(jump_counts[idx])
+            jump_term[idx] = float(rng.normal(loc=jump_mu, scale=jump_sigma, size=count).sum())
+
+        dlog_s = ((mu - (0.5 * v_prev)) * DT) + (np.sqrt(v_prev) * math.sqrt(DT) * z_price) + jump_term
+        prices[:, t + 1] = np.maximum(prices[:, t] * np.exp(dlog_s), 1.0)
+
+    return prices, variances
+
+
 def _phase_for_date(cycle: BitcoinCycle, date_value: datetime) -> str:
     return cycle.get_phase(date_value.strftime("%Y-%m-%d"))["phase"]
 
@@ -385,14 +511,61 @@ def model_specs() -> list[tuple[str, object, object]]:
     ]
 
 
+def _path_factor_summary(synthetic_data: list[dict], scorer: QuantScorer) -> dict:
+    rows = []
+    for day in synthetic_data:
+        scores = scorer.calculate_scores(day)["scores"]
+        lt = scores["long_term"]["components"]
+        mt = scores["medium_term"]["components"]
+        rows.append(
+            {
+                "valuation": _safe_float(lt.get("valuation"), 0.0),
+                "macro": _safe_float(lt.get("macro"), 0.0),
+                "trend": _safe_float(lt.get("trend"), 0.0),
+                "regime": _safe_float(lt.get("regime"), 0.0),
+                "uncertainty": _safe_float(lt.get("uncertainty"), 0.0),
+                "momentum": _safe_float(mt.get("momentum"), 0.0),
+                "reversion": _safe_float(mt.get("reversion"), 0.0),
+                "risk": _safe_float(mt.get("risk"), 0.0),
+            }
+        )
+
+    if not rows:
+        return {
+            "valuation_mean": 0.0,
+            "macro_mean": 0.0,
+            "trend_mean": 0.0,
+            "regime_mean": 0.0,
+            "uncertainty_mean": 0.0,
+            "momentum_mean": 0.0,
+            "reversion_mean": 0.0,
+            "risk_mean": 0.0,
+        }
+
+    df = pd.DataFrame(rows)
+    return {
+        "valuation_mean": float(df["valuation"].mean()),
+        "macro_mean": float(df["macro"].mean()),
+        "trend_mean": float(df["trend"].mean()),
+        "regime_mean": float(df["regime"].mean()),
+        "uncertainty_mean": float(df["uncertainty"].mean()),
+        "momentum_mean": float(df["momentum"].mean()),
+        "reversion_mean": float(df["reversion"].mean()),
+        "risk_mean": float(df["risk"].mean()),
+    }
+
+
 def run_stochastic_paths(
     simulated_prices: np.ndarray,
     start_date: datetime,
     macro_baseline: dict,
     simulator: PortfolioSimulator,
-) -> pd.DataFrame:
+    scenario: str = "regime_jump",
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     rows: list[dict] = []
+    factor_rows: list[dict] = []
     specs = model_specs()
+    attribution_scorer = QuantScorer(mode="quant")
 
     for path_id in range(simulated_prices.shape[0]):
         synthetic_data = build_synthetic_daily_data(
@@ -401,10 +574,14 @@ def run_stochastic_paths(
             macro_baseline=macro_baseline,
         )
 
+        factor_summary = _path_factor_summary(synthetic_data, attribution_scorer)
+        factor_rows.append({"path_id": path_id, "scenario": scenario, **factor_summary})
+
         bnh = buy_and_hold_metrics(synthetic_data)
         rows.append(
             {
                 "path_id": path_id,
+                "scenario": scenario,
                 "model": "buy_and_hold",
                 "total_return_pct": bnh["total_return_pct"],
                 "cagr_pct": bnh["cagr_pct"],
@@ -420,6 +597,7 @@ def run_stochastic_paths(
             rows.append(
                 {
                     "path_id": path_id,
+                    "scenario": scenario,
                     "model": model_name,
                     "total_return_pct": result.total_return_pct,
                     "cagr_pct": result.cagr_pct,
@@ -430,27 +608,30 @@ def run_stochastic_paths(
                 }
             )
 
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows), pd.DataFrame(factor_rows)
 
 
 def summarize_stochastic_results(path_df: pd.DataFrame) -> pd.DataFrame:
     non_bnh = path_df[path_df["model"] != "buy_and_hold"].copy()
-    bnh = path_df[path_df["model"] == "buy_and_hold"][["path_id", "total_return_pct"]].rename(
+    bnh = path_df[path_df["model"] == "buy_and_hold"][["path_id", "scenario", "total_return_pct"]].rename(
         columns={"total_return_pct": "bnh_return_pct"}
     )
-    merged = non_bnh.merge(bnh, on="path_id", how="left")
+    merged = non_bnh.merge(bnh, on=["path_id", "scenario"], how="left")
 
     rows = []
-    for model_name, group in merged.groupby("model", sort=False):
+    for (scenario_name, model_name), group in merged.groupby(["scenario", "model"], sort=False):
         ret = group["total_return_pct"].astype(float)
         dd = group["max_drawdown_pct"].astype(float)
         sharpe = group["sharpe"].astype(float)
 
         var_95 = float(np.percentile(ret, 5))
         cvar_95 = float(ret[ret <= var_95].mean()) if (ret <= var_95).any() else var_95
+        beat_count = int((group["total_return_pct"] > group["bnh_return_pct"]).sum())
+        ci_low, ci_high, post_mean = _beta_credible_interval(beat_count, int(len(group)))
 
         rows.append(
             {
+                "scenario": scenario_name,
                 "model": model_name,
                 "paths": int(len(group)),
                 "mean_return_pct": round(float(ret.mean()), 2),
@@ -462,14 +643,117 @@ def summarize_stochastic_results(path_df: pd.DataFrame) -> pd.DataFrame:
                 "worst_drawdown_pct": round(float(dd.min()), 2),
                 "prob_positive_return": round(float((ret > 0).mean()), 4),
                 "prob_beat_bnh": round(float((group["total_return_pct"] > group["bnh_return_pct"]).mean()), 4),
+                "prob_beat_bnh_post_mean": round(post_mean, 4),
+                "prob_beat_bnh_ci95_low": round(ci_low, 4),
+                "prob_beat_bnh_ci95_high": round(ci_high, 4),
                 "mean_trades": round(float(group["trades"].mean()), 1),
             }
         )
 
     summary = pd.DataFrame(rows)
     if not summary.empty:
-        summary = summary.sort_values(by=["mean_return_pct", "mean_sharpe"], ascending=False)
+        summary = summary.sort_values(by=["scenario", "mean_return_pct", "mean_sharpe"], ascending=[True, False, False])
     return summary
+
+
+def build_hypothesis_tests(path_df: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    family_pvalues: list[tuple[str, float]] = []
+
+    for scenario_name, scenario_df in path_df.groupby("scenario"):
+        bnh_returns = scenario_df[scenario_df["model"] == "buy_and_hold"][["path_id", "total_return_pct"]].rename(
+            columns={"total_return_pct": "bnh_return_pct"}
+        )
+        candidates = scenario_df[scenario_df["model"] != "buy_and_hold"].copy()
+        merged = candidates.merge(bnh_returns, on="path_id", how="left")
+
+        for model_name, group in merged.groupby("model"):
+            alpha_diff = group["total_return_pct"].to_numpy(dtype=float) - group["bnh_return_pct"].to_numpy(dtype=float)
+            p_rc = _white_reality_check_pvalue(alpha_diff)
+            mean_alpha = float(np.mean(alpha_diff)) if alpha_diff.size else 0.0
+            key = f"{scenario_name}:{model_name}:vs_bnh"
+            family_pvalues.append((key, p_rc))
+            rows.append(
+                {
+                    "scenario": scenario_name,
+                    "comparison": f"{model_name} vs buy_and_hold",
+                    "model": model_name,
+                    "benchmark": "buy_and_hold",
+                    "mean_alpha_pct": round(mean_alpha, 3),
+                    "p_white_reality_check": round(p_rc, 5),
+                    "holm_adjusted_p": np.nan,
+                    "reject_5pct": False,
+                }
+            )
+
+    holm_map = _holm_adjustment(family_pvalues)
+    for row in rows:
+        key = f"{row['scenario']}:{row['model']}:vs_bnh"
+        holm = float(holm_map.get(key, 1.0))
+        row["holm_adjusted_p"] = round(holm, 5)
+        row["reject_5pct"] = bool(holm < 0.05)
+
+    return pd.DataFrame(rows)
+
+
+def compute_factor_attribution(path_results: pd.DataFrame, factor_df: pd.DataFrame) -> pd.DataFrame:
+    factor_cols = [
+        "valuation_mean",
+        "macro_mean",
+        "trend_mean",
+        "regime_mean",
+        "uncertainty_mean",
+        "momentum_mean",
+        "reversion_mean",
+        "risk_mean",
+    ]
+
+    rows = []
+    candidates = path_results[path_results["model"] != "buy_and_hold"].copy()
+
+    for (scenario_name, model_name), group in candidates.groupby(["scenario", "model"]):
+        merged = group[["path_id", "total_return_pct"]].merge(
+            factor_df[factor_df["scenario"] == scenario_name][["path_id", *factor_cols]],
+            on="path_id",
+            how="inner",
+        )
+        if merged.shape[0] < 15:
+            continue
+
+        y = merged["total_return_pct"].to_numpy(dtype=float)
+        x = merged[factor_cols].to_numpy(dtype=float)
+
+        x_design = np.column_stack([np.ones(x.shape[0]), x])
+        beta, *_ = np.linalg.lstsq(x_design, y, rcond=None)
+        fitted = x_design @ beta
+
+        tss = float(np.sum((y - y.mean()) ** 2))
+        rss = float(np.sum((y - fitted) ** 2))
+        r2 = 1.0 - (rss / tss) if tss > 1e-12 else 0.0
+
+        x_mean = x.mean(axis=0)
+        x_std = x.std(axis=0, ddof=1)
+        x_std = np.where(x_std <= 1e-9, 1.0, x_std)
+
+        alpha_contrib = beta[1:] * x_mean
+        risk_proxy = np.abs(beta[1:] * x_std)
+        risk_total = float(np.sum(risk_proxy))
+        risk_share = (risk_proxy / risk_total) if risk_total > 1e-12 else np.zeros_like(risk_proxy)
+
+        for idx, factor_name in enumerate(factor_cols):
+            rows.append(
+                {
+                    "scenario": scenario_name,
+                    "model": model_name,
+                    "factor": factor_name,
+                    "beta": round(float(beta[idx + 1]), 5),
+                    "alpha_contribution_pct": round(float(alpha_contrib[idx]), 4),
+                    "risk_share": round(float(risk_share[idx]), 4),
+                    "model_r2": round(float(r2), 4),
+                }
+            )
+
+    return pd.DataFrame(rows)
 
 
 def build_sensitivity_surface(
@@ -714,7 +998,9 @@ def save_regime_transition_heatmap(params: dict, output_path: Path) -> None:
 def write_report(
     params: dict,
     summary_df: pd.DataFrame,
-    path_results: pd.DataFrame,
+    hypothesis_df: pd.DataFrame,
+    factor_attr_df: pd.DataFrame,
+    heston_summary_df: pd.DataFrame,
     grid_df: pd.DataFrame,
     figures: dict,
     n_paths: int,
@@ -761,18 +1047,66 @@ def write_report(
     lines.append(f"- Horizon: `{horizon_days}` days")
     lines.append(f"- Cost model: `{COST_BPS:.2f}` bps per side")
     lines.append(f"- Debt carry: `{ANNUAL_DEBT_RATE:.2%}` annual")
+    lines.append(f"- White Reality Check bootstraps: `{WHITE_RC_BOOTSTRAPS}`")
+    lines.append(f"- Bayesian posterior draws (beat probability): `{BAYESIAN_DRAWS}`")
     lines.append("")
 
     lines.append("## Model Robustness Under Stochastic Paths")
     lines.append("")
-    lines.append("| Model | Paths | Mean Return | Std Return | VaR 95% | CVaR 95% | Mean Sharpe | Mean Max DD | Worst DD | P(Return>0) | P(Beat BnH) | Mean Trades |")
-    lines.append("| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+    lines.append("| Scenario | Model | Paths | Mean Return | VaR 95% | CVaR 95% | Mean Sharpe | Mean Max DD | P(Beat BnH) | Bayesian 95% CI | Mean Trades |")
+    lines.append("| :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | :--- | ---: |")
     for _, row in summary_df.iterrows():
         lines.append(
-            "| {model} | {paths} | {mean_return_pct:+.2f}% | {std_return_pct:.2f}% | {var_95_return_pct:+.2f}% | {cvar_95_return_pct:+.2f}% | {mean_sharpe:.3f} | {mean_max_drawdown_pct:.2f}% | {worst_drawdown_pct:.2f}% | {prob_positive_return:.2%} | {prob_beat_bnh:.2%} | {mean_trades:.1f} |".format(
+            "| {scenario} | {model} | {paths} | {mean_return_pct:+.2f}% | {var_95_return_pct:+.2f}% | {cvar_95_return_pct:+.2f}% | {mean_sharpe:.3f} | {mean_max_drawdown_pct:.2f}% | {prob_beat_bnh:.2%} | [{prob_beat_bnh_ci95_low:.2%}, {prob_beat_bnh_ci95_high:.2%}] | {mean_trades:.1f} |".format(
                 **row.to_dict()
             )
         )
+
+    if not heston_summary_df.empty:
+        lines.append("")
+        lines.append("## Heston Expansion Scenario")
+        lines.append("")
+        lines.append("Roadmap upgrade: stochastic-volatility (Heston-style) with jumps, for model-risk stress under volatility-of-volatility.")
+        lines.append("")
+        lines.append("| Scenario | Model | Mean Return | VaR 95% | Mean Sharpe | Mean Max DD | P(Beat BnH) |")
+        lines.append("| :--- | :--- | ---: | ---: | ---: | ---: | ---: |")
+        for _, row in heston_summary_df.iterrows():
+            lines.append(
+                "| {scenario} | {model} | {mean_return_pct:+.2f}% | {var_95_return_pct:+.2f}% | {mean_sharpe:.3f} | {mean_max_drawdown_pct:.2f}% | {prob_beat_bnh:.2%} |".format(
+                    **row.to_dict()
+                )
+            )
+
+    if not hypothesis_df.empty:
+        lines.append("")
+        lines.append("## Multiple-Testing Control (White RC + Holm)")
+        lines.append("")
+        lines.append("White Reality Check-style bootstrap tests were applied to model alpha vs Buy and Hold, with Holm-Bonferroni correction across candidates.")
+        lines.append("")
+        lines.append("| Scenario | Comparison | Mean Alpha | White RC p-value | Holm-adjusted p-value | Reject at 5% |")
+        lines.append("| :--- | :--- | ---: | ---: | ---: | :---: |")
+        for _, row in hypothesis_df.iterrows():
+            lines.append(
+                "| {scenario} | {comparison} | {mean_alpha_pct:+.3f}% | {p_white_reality_check:.5f} | {holm_adjusted_p:.5f} | {reject_5pct} |".format(
+                    **row.to_dict()
+                )
+            )
+
+    if not factor_attr_df.empty:
+        lines.append("")
+        lines.append("## Factor Attribution (Cross-Sectional)")
+        lines.append("")
+        lines.append("Cross-sectional regressions decompose path-level return dispersion by score factors. Risk share is a normalized proxy based on coefficient-scaled factor volatility.")
+        lines.append("")
+        lines.append("| Scenario | Model | Factor | Beta | Alpha Contribution | Risk Share | Model R2 |")
+        lines.append("| :--- | :--- | :--- | ---: | ---: | ---: | ---: |")
+        ranked_attr = factor_attr_df.sort_values(["scenario", "model", "risk_share"], ascending=[True, True, False])
+        for _, row in ranked_attr.iterrows():
+            lines.append(
+                "| {scenario} | {model} | {factor} | {beta:+.5f} | {alpha_contribution_pct:+.4f}% | {risk_share:.2%} | {model_r2:.3f} |".format(
+                    **row.to_dict()
+                )
+            )
 
     lines.append("")
     lines.append("## Sensitivity Surface")
@@ -792,6 +1126,7 @@ def write_report(
     lines.append("## Figures")
     lines.append("")
     lines.append(f"- Fan chart: `{figures['fan_chart']}`")
+    lines.append(f"- Heston fan chart: `{figures['heston_fan_chart']}`")
     lines.append(f"- 3D surface: `{figures['surface_3d']}`")
     lines.append(f"- 3D scatter: `{figures['scatter_3d']}`")
     lines.append(f"- Regime heatmap: `{figures['heatmap']}`")
@@ -799,6 +1134,8 @@ def write_report(
     lines.append("## Notes")
     lines.append("")
     lines.append("- Synthetic features are rebuilt path-by-path, then scored and executed by the same strategy code used in backtests.")
+    lines.append("- Bayesian credible intervals quantify uncertainty in outperform probability vs Buy and Hold.")
+    lines.append("- White RC + Holm adjustment control data-mining bias across multiple candidate models.")
     lines.append("- Results are scenario evidence and should be combined with walk-forward gate decisions before production promotion.")
 
     REPORT_MD.write_text("\n".join(lines), encoding="utf-8")
@@ -825,38 +1162,67 @@ def run_stochastic_validation() -> None:
     start_date = prices.index[-1].to_pydatetime() + timedelta(days=1)
 
     simulator = PortfolioSimulator(trading_cost_bps=COST_BPS, annual_debt_rate=ANNUAL_DEBT_RATE)
-    path_results = run_stochastic_paths(
+    path_results, factor_df = run_stochastic_paths(
         simulated_prices=simulated_prices,
         start_date=start_date,
         macro_baseline=macro_baseline,
         simulator=simulator,
+        scenario="regime_jump",
     )
 
+    # Roadmap expansion: Heston stochastic-volatility scenario with jumps.
+    heston_prices, _ = simulate_heston_jump_diffusion(
+        params=params,
+        s0=s0,
+        n_paths=HESTON_PATHS,
+        horizon_days=HORIZON_DAYS,
+        seed=int(rng.integers(0, 10_000_000)),
+    )
+    heston_path_results, heston_factor_df = run_stochastic_paths(
+        simulated_prices=heston_prices,
+        start_date=start_date,
+        macro_baseline=macro_baseline,
+        simulator=simulator,
+        scenario="heston_jump",
+    )
+
+    all_path_results = pd.concat([path_results, heston_path_results], ignore_index=True)
+    all_factor_df = pd.concat([factor_df, heston_factor_df], ignore_index=True)
+
     summary_df = summarize_stochastic_results(path_results)
+    heston_summary_df = summarize_stochastic_results(heston_path_results)
     grid_df = build_sensitivity_surface(
         params=params,
         s0=s0,
         start_date=start_date,
         macro_baseline=macro_baseline,
     )
+    hypothesis_df = build_hypothesis_tests(all_path_results)
+    factor_attr_df = compute_factor_attribution(all_path_results, all_factor_df)
 
     PATH_RESULTS_CSV.parent.mkdir(parents=True, exist_ok=True)
-    PATH_RESULTS_CSV.write_text(path_results.to_csv(index=False), encoding="utf-8")
+    PATH_RESULTS_CSV.write_text(all_path_results.to_csv(index=False), encoding="utf-8")
     SUMMARY_CSV.write_text(summary_df.to_csv(index=False), encoding="utf-8")
+    HESTON_SUMMARY_CSV.write_text(heston_summary_df.to_csv(index=False), encoding="utf-8")
     GRID_CSV.write_text(grid_df.to_csv(index=False), encoding="utf-8")
+    HYPOTHESIS_CSV.write_text(hypothesis_df.to_csv(index=False), encoding="utf-8")
+    FACTOR_ATTRIBUTION_CSV.write_text(factor_attr_df.to_csv(index=False), encoding="utf-8")
 
     fan_chart_path = FIGURES_DIR / "stochastic_fan_chart.html"
+    heston_fan_chart_path = FIGURES_DIR / "stochastic_heston_fan_chart.html"
     surface_path = FIGURES_DIR / "stochastic_surface_3d.html"
     scatter_path = FIGURES_DIR / "stochastic_scatter_3d.html"
     heatmap_path = FIGURES_DIR / "regime_transition_heatmap.html"
 
     save_fan_chart(simulated_prices, fan_chart_path)
+    save_fan_chart(heston_prices, heston_fan_chart_path)
     save_3d_surface(grid_df, surface_path)
-    save_3d_scatter(path_results, scatter_path)
+    save_3d_scatter(all_path_results, scatter_path)
     save_regime_transition_heatmap(params, heatmap_path)
 
     figures = {
         "fan_chart": str(fan_chart_path),
+        "heston_fan_chart": str(heston_fan_chart_path),
         "surface_3d": str(surface_path),
         "scatter_3d": str(scatter_path),
         "heatmap": str(heatmap_path),
@@ -864,8 +1230,10 @@ def run_stochastic_validation() -> None:
 
     write_report(
         params=params,
-        summary_df=summary_df,
-        path_results=path_results,
+        summary_df=pd.concat([summary_df, heston_summary_df], ignore_index=True),
+        hypothesis_df=hypothesis_df,
+        factor_attr_df=factor_attr_df,
+        heston_summary_df=heston_summary_df,
         grid_df=grid_df,
         figures=figures,
         n_paths=N_PATHS,
@@ -873,7 +1241,7 @@ def run_stochastic_validation() -> None:
     )
 
     print("Stochastic calculus validation completed.")
-    print(summary_df)
+    print(pd.concat([summary_df, heston_summary_df], ignore_index=True))
 
 
 if __name__ == "__main__":

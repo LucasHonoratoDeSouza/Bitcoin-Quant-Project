@@ -1,0 +1,9 @@
+scenario,comparison,model,benchmark,mean_alpha_pct,p_white_reality_check,holm_adjusted_p,reject_5pct
+heston_jump,advanced_adaptive_research vs buy_and_hold,advanced_adaptive_research,buy_and_hold,-21.791,1.0,1.0,False
+heston_jump,legacy_confidence_research vs buy_and_hold,legacy_confidence_research,buy_and_hold,-21.882,1.0,1.0,False
+heston_jump,legacy_cooldown3_baseline vs buy_and_hold,legacy_cooldown3_baseline,buy_and_hold,-19.694,1.0,1.0,False
+heston_jump,production_legacy_cooldown1 vs buy_and_hold,production_legacy_cooldown1,buy_and_hold,-19.987,1.0,1.0,False
+regime_jump,advanced_adaptive_research vs buy_and_hold,advanced_adaptive_research,buy_and_hold,-9.309,0.99633,1.0,False
+regime_jump,legacy_confidence_research vs buy_and_hold,legacy_confidence_research,buy_and_hold,-9.88,0.99733,1.0,False
+regime_jump,legacy_cooldown3_baseline vs buy_and_hold,legacy_cooldown3_baseline,buy_and_hold,-8.449,0.995,1.0,False
+regime_jump,production_legacy_cooldown1 vs buy_and_hold,production_legacy_cooldown1,buy_and_hold,-8.537,0.99567,1.0,False

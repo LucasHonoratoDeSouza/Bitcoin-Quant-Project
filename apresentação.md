@@ -252,6 +252,7 @@ Gerados em reports/stochastic/figures/:
 Links diretos:
 
 - [Fan Chart Monte Carlo](reports/stochastic/figures/stochastic_fan_chart.html)
+- [Fan Chart Heston + Jump](reports/stochastic/figures/stochastic_heston_fan_chart.html)
 - [Superficie 3D Drift x Volatilidade](reports/stochastic/figures/stochastic_surface_3d.html)
 - [Nuvem 3D por Modelo](reports/stochastic/figures/stochastic_scatter_3d.html)
 - [Heatmap de Transicao de Regimes](reports/stochastic/figures/regime_transition_heatmap.html)
@@ -262,6 +263,11 @@ Links diretos:
 <details>
 	<summary>Fan Chart Monte Carlo</summary>
 	<iframe src="reports/stochastic/figures/stochastic_fan_chart.html" width="100%" height="640"></iframe>
+</details>
+
+<details>
+	<summary>Fan Chart Heston + Jump</summary>
+	<iframe src="reports/stochastic/figures/stochastic_heston_fan_chart.html" width="100%" height="640"></iframe>
 </details>
 
 <details>
@@ -281,20 +287,89 @@ Links diretos:
 
 ## 8.5 Resumo quantitativo dos graficos
 
-Leituras principais dos resultados Monte Carlo (220 caminhos):
+Leituras principais dos resultados Monte Carlo por cenario:
+
+### Cenario regime_jump (220 caminhos)
 
 | Modelo | Mean Return | VaR 95% | CVaR 95% | Mean Max DD | P(Beat BnH) |
 | :--- | ---: | ---: | ---: | ---: | ---: |
 | production_legacy_cooldown1 | +2.87% | -19.39% | -25.47% | -11.94% | 56.82% |
 | legacy_cooldown3_baseline | +2.96% | -16.24% | -22.57% | -11.33% | 55.91% |
 | legacy_confidence_research | +1.53% | -8.56% | -11.31% | -6.18% | 53.18% |
-| advanced_adaptive_research | +2.65% | -19.57% | -23.71% | -18.91% | 44.09% |
+| advanced_adaptive_research | +2.10% | -13.95% | -20.36% | -9.25% | 54.09% |
+
+### Cenario heston_jump (140 caminhos)
+
+| Modelo | Mean Return | VaR 95% | CVaR 95% | Mean Max DD | P(Beat BnH) | CI Bayes 95% |
+| :--- | ---: | ---: | ---: | ---: | ---: | :--- |
+| production_legacy_cooldown1 | +4.23% | -22.21% | -27.66% | -11.47% | 47.14% | [39.03%, 55.40%] |
+| legacy_cooldown3_baseline | +4.52% | -22.40% | -25.57% | -11.01% | 45.00% | [37.02%, 53.35%] |
+| legacy_confidence_research | +2.33% | -10.30% | -12.82% | -5.91% | 41.43% | [33.61%, 49.74%] |
+| advanced_adaptive_research | +2.43% | -21.37% | -27.92% | -9.24% | 46.43% | [38.38%, 54.64%] |
 
 Arquivos de apoio:
 
 - [Resumo por modelo](tests/backtest/stochastic_summary.csv)
+- [Resumo por modelo (cenario Heston)](tests/backtest/stochastic_heston_summary.csv)
 - [Resultados por caminho](tests/backtest/stochastic_path_results.csv)
 - [Grid da superficie 3D](tests/backtest/stochastic_surface_grid.csv)
+- [Hipoteses com White RC + Holm](tests/backtest/stochastic_hypothesis_tests.csv)
+- [Attribution por fator](tests/backtest/stochastic_factor_attribution.csv)
+
+## 8.6 Controle de multipla comparacao (Roadmap entregue)
+
+Para reduzir risco de data mining, o bloco estocastico agora inclui:
+
+1. White Reality Check-style bootstrap para testar alpha medio vs Buy and Hold.
+2. Correcao Holm-Bonferroni na familia de comparacoes dos candidatos.
+
+Leitura pratica:
+
+- p-value White RC baixo sugere alpha robusto na distribuicao de caminhos.
+- Holm ajusta significancia para evitar falso positivo de selecao de modelo.
+
+Resultado desta rodada:
+
+- Nenhum modelo rejeitou H0 de alpha <= 0 ao nivel de 5% apos Holm (todas as hipoteses com `reject_5pct = False`).
+- No cenario regime_jump, os p-values White RC ficaram em torno de 0.995-0.997.
+- No cenario heston_jump, os p-values White RC ficaram em 1.000.
+
+## 8.7 Attribution por fator (Roadmap entregue)
+
+Foi adicionado attribution cross-sectional nos caminhos simulados, decompondo retorno e risco por fatores do score:
+
+- valuation,
+- macro,
+- trend,
+- regime,
+- uncertainty,
+- momentum,
+- reversion,
+- risk.
+
+Cada modelo recebe:
+
+- beta por fator,
+- contribuicao estimada para alpha,
+- parcela de risco por fator (risk share),
+- R2 do ajuste cross-sectional.
+
+Destaques desta execucao (modelo advanced_adaptive_research):
+
+| Cenario | Top fator de risco | Risk Share | Fator 2 | Risk Share | R2 |
+| :--- | :--- | ---: | :--- | ---: | ---: |
+| regime_jump | reversion_mean | 43.60% | trend_mean | 33.05% | 0.574 |
+| heston_jump | reversion_mean | 42.44% | trend_mean | 31.22% | 0.680 |
+
+Interpretacao objetiva:
+
+- O bloco de reversion e o principal motor de risco em ambos os cenarios.
+- Trend aparece como segunda maior fonte de variancia explicada.
+- O fator risk_mean permanece relevante como terceiro contribuinte (10.87% em regime_jump e 11.88% em heston_jump).
+
+Arquivo:
+
+- [Tabela de attribution](tests/backtest/stochastic_factor_attribution.csv)
 
 ## 9. Interpretacao Quantitativa dos Resultados
 
@@ -313,10 +388,18 @@ Como ler os resultados estocasticos:
 
 ## 11. Roadmap Quantitativo Imediato
 
-1. Inserir Heston com vol estocastica latente para comparar com jump-diffusion atual.
-2. Adicionar controle de multipla comparacao (SPA / White Reality Check) no bloco estocastico.
-3. Integrar intervalos de confianca bayesianos para probabilidade de outperform vs BnH.
-4. Incluir attribution por fator (valuation/macro/trend) para decompor alpha e risco.
+Concluido nesta iteracao:
+
+1. Inserir Heston com vol estocastica latente para comparar com jump-diffusion atual. [OK]
+2. Adicionar controle de multipla comparacao (SPA / White Reality Check) no bloco estocastico. [OK - White RC + Holm]
+3. Integrar intervalos de confianca bayesianos para probabilidade de outperform vs BnH. [OK]
+4. Incluir attribution por fator (valuation/macro/trend) para decompor alpha e risco. [OK]
+
+Proximos passos:
+
+1. Inserir filtro HMM explicito para inferencia de estado latente em tempo real.
+2. Adicionar camada GARCH dedicada para forecast de volatilidade e position sizing online.
+3. Estender SPA/White para familias completas de modelos no walk-forward diario.
 
 ## 12. Comandos de Reproducao
 

@@ -16,7 +16,7 @@ jobs:
   run-daily-pipeline-repository-secret:
     if: ${{ vars.WORKFLOW_ENVIRONMENT == '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       PYTHONUNBUFFERED: "1"
       FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
@@ -41,13 +41,37 @@ jobs:
       - name: Run full pipeline
         run: python main.py full --strict
 
+      - name: Run daily walk-forward analysis
+        run: python tests/backtest/walkforward_analysis.py
+
       - name: Write status summary
         run: |
           python main.py status --json > pipeline-status.json
+          python - <<'PY' > walkforward-gate-summary.json
+          import json
+          from pathlib import Path
+
+          gate_path = Path("data/signals/production_gate.json")
+          if gate_path.exists():
+              payload = json.loads(gate_path.read_text(encoding="utf-8"))
+              print(json.dumps({
+                  "generated_on": payload.get("generated_on"),
+                  "selected_model": payload.get("selected_model"),
+                  "promotion_allowed": payload.get("promotion_allowed"),
+                  "selection_reason": payload.get("selection_reason"),
+              }, indent=2))
+          else:
+              print(json.dumps({"error": "production_gate.json not found"}, indent=2))
+          PY
           {
             echo "## Daily pipeline status"
             echo '```json'
             cat pipeline-status.json
+            echo '```'
+            echo ""
+            echo "## Daily walk-forward gate"
+            echo '```json'
+            cat walkforward-gate-summary.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -60,6 +84,7 @@ jobs:
           retention-days: 14
           path: |
             pipeline-status.json
+            walkforward-gate-summary.json
             latest_report.md
             README.md
             data/raw
@@ -67,23 +92,25 @@ jobs:
             data/signals
             data/accounting
             reports/daily
+            docs/backtesting-reports/walkforward_analysis.md
+            tests/backtest/walkforward_results.csv
 
       - name: Commit generated files
         run: |
-          if [ -z "$(git status --porcelain -- README.md latest_report.md data reports)" ]; then
+          if [ -z "$(git status --porcelain -- README.md latest_report.md data reports docs/backtesting-reports/walkforward_analysis.md tests/backtest/walkforward_results.csv)" ]; then
             echo "No generated changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md latest_report.md data reports
-          git commit -m "chore: refresh daily market pipeline ($(date -u +'%Y-%m-%d'))"
+          git add README.md latest_report.md data reports docs/backtesting-reports/walkforward_analysis.md tests/backtest/walkforward_results.csv
+          git commit -m "chore: refresh daily market pipeline + walk-forward ($(date -u +'%Y-%m-%d'))"
           git push
 
   run-daily-pipeline-environment-secret:
     if: ${{ vars.WORKFLOW_ENVIRONMENT != '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     environment: ${{ vars.WORKFLOW_ENVIRONMENT }}
     env:
       PYTHONUNBUFFERED: "1"
@@ -109,13 +136,37 @@ jobs:
       - name: Run full pipeline
         run: python main.py full --strict
 
+      - name: Run daily walk-forward analysis
+        run: python tests/backtest/walkforward_analysis.py
+
       - name: Write status summary
         run: |
           python main.py status --json > pipeline-status.json
+          python - <<'PY' > walkforward-gate-summary.json
+          import json
+          from pathlib import Path
+
+          gate_path = Path("data/signals/production_gate.json")
+          if gate_path.exists():
+              payload = json.loads(gate_path.read_text(encoding="utf-8"))
+              print(json.dumps({
+                  "generated_on": payload.get("generated_on"),
+                  "selected_model": payload.get("selected_model"),
+                  "promotion_allowed": payload.get("promotion_allowed"),
+                  "selection_reason": payload.get("selection_reason"),
+              }, indent=2))
+          else:
+              print(json.dumps({"error": "production_gate.json not found"}, indent=2))
+          PY
           {
             echo "## Daily pipeline status"
             echo '```json'
             cat pipeline-status.json
+            echo '```'
+            echo ""
+            echo "## Daily walk-forward gate"
+            echo '```json'
+            cat walkforward-gate-summary.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -128,6 +179,7 @@ jobs:
           retention-days: 14
           path: |
             pipeline-status.json
+            walkforward-gate-summary.json
             latest_report.md
             README.md
             data/raw
@@ -135,15 +187,17 @@ jobs:
             data/signals
             data/accounting
             reports/daily
+            docs/backtesting-reports/walkforward_analysis.md
+            tests/backtest/walkforward_results.csv
 
       - name: Commit generated files
         run: |
-          if [ -z "$(git status --porcelain -- README.md latest_report.md data reports)" ]; then
+          if [ -z "$(git status --porcelain -- README.md latest_report.md data reports docs/backtesting-reports/walkforward_analysis.md tests/backtest/walkforward_results.csv)" ]; then
             echo "No generated changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md latest_report.md data reports
-          git commit -m "chore: refresh daily market pipeline ($(date -u +'%Y-%m-%d'))"
+          git add README.md latest_report.md data reports docs/backtesting-reports/walkforward_analysis.md tests/backtest/walkforward_results.csv
+          git commit -m "chore: refresh daily market pipeline + walk-forward ($(date -u +'%Y-%m-%d'))"
           git push

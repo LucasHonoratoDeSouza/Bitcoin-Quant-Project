@@ -1,6 +1,6 @@
 model,total_return_pct,cagr_pct,max_drawdown_pct,sharpe,sortino,calmar,annual_volatility_pct,trades,turnover_usd,trades_per_year,avg_leverage,max_leverage,final_equity
-legacy_signal + legacy_allocation(cooldown=3),438.63,47.95,-27.32,1.271,1.898,1.755,35.85,69,1177766.21,16.05,0.65,1.0,53863.41
-legacy_signal + legacy_allocation(cooldown=1),439.54,48.01,-29.12,1.272,1.895,1.648,35.85,78,1288374.23,18.15,0.64,1.0,53953.87
-advanced_signal + legacy_allocation(cooldown=3),59.99,11.55,-66.97,0.47,0.665,0.172,51.96,2,9995.5,0.47,1.0,1.01,15998.65
-advanced_signal + adaptive_allocation,101.38,17.69,-28.68,0.773,1.161,0.617,25.16,809,368523.11,188.2,0.5,0.73,20137.94
-legacy_signal + confidence_allocation,437.13,47.86,-28.03,1.277,1.902,1.707,35.53,94,1288884.18,21.87,0.63,1.06,53713.11
+legacy_signal + legacy_allocation(cooldown=3),743.41,49.54,-30.29,1.228,1.765,1.636,38.88,102,1988510.32,19.25,0.61,1.0,84341.11
+legacy_signal + legacy_allocation(cooldown=1),764.73,50.25,-30.87,1.241,1.785,1.628,38.86,113,2230618.74,21.33,0.61,1.0,86473.25
+advanced_signal + legacy_allocation(cooldown=3),58.35,9.06,-32.47,0.59,0.826,0.279,17.2,48,81511.52,9.06,0.31,0.55,15834.62
+advanced_signal + adaptive_allocation,44.11,7.14,-34.92,0.469,0.565,0.204,18.27,1113,486088.08,210.05,0.25,0.63,14411.13
+legacy_signal + confidence_allocation,539.97,41.95,-24.0,1.298,1.805,1.748,30.58,346,1508018.14,65.3,0.45,0.93,63996.93

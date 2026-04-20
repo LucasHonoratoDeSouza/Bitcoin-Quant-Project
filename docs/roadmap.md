@@ -22,11 +22,20 @@ This roadmap defines how new ideas move from hypothesis to production.
 - Enforce one canonical daily snapshot and score row per date.
 - Keep advanced models available in research mode, not default.
 
-### Phase 4 - Quant Expansion (Planned)
+### Phase 4 - Quant Expansion (In Progress)
 
-- Regime-switching models (HMM / Markov switching).
-- Volatility model layer (GARCH-family) for position sizing.
-- Purged walk-forward CV and multiple-testing controls (SPA / White Reality Check).
+Completed on 2026-04-20:
+
+- Added Heston-style stochastic-volatility scenario with jumps in stochastic validation.
+- Added multiple-testing control in stochastic block using White Reality Check-style bootstrap with Holm-Bonferroni correction.
+- Added Bayesian credible intervals for outperform probability vs Buy and Hold.
+- Added factor attribution output (valuation/macro/trend/regime/uncertainty/momentum/reversion/risk) for alpha/risk decomposition.
+
+Remaining backlog:
+
+- Add explicit HMM latent-state filtering for production-time regime inference.
+- Add dedicated GARCH-family volatility forecast layer for online position sizing.
+- Extend multiple-testing controls to full walk-forward model families with SPA/White at daily-return level.
 
 ### Operating Rule
 

@@ -1,0 +1,5 @@
+scenario,model,paths,mean_return_pct,std_return_pct,var_95_return_pct,cvar_95_return_pct,mean_sharpe,mean_max_drawdown_pct,worst_drawdown_pct,prob_positive_return,prob_beat_bnh,prob_beat_bnh_post_mean,prob_beat_bnh_ci95_low,prob_beat_bnh_ci95_high,mean_trades
+heston_jump,legacy_cooldown3_baseline,140,4.52,12.71,-22.4,-25.57,0.764,-11.01,-37.35,0.6857,0.45,0.4506,0.3702,0.5335,14.0
+heston_jump,production_legacy_cooldown1,140,4.23,13.02,-22.21,-27.66,0.758,-11.47,-38.85,0.6929,0.4714,0.4717,0.3903,0.554,16.8
+heston_jump,advanced_adaptive_research,140,2.43,10.36,-21.37,-27.92,0.787,-9.24,-42.84,0.7286,0.4643,0.4652,0.3838,0.5464,126.8
+heston_jump,legacy_confidence_research,140,2.33,7.18,-10.3,-12.82,0.64,-5.91,-18.67,0.6643,0.4143,0.4154,0.3361,0.4974,24.9

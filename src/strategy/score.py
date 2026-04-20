@@ -45,9 +45,10 @@ class HistoricalFeatureCalibrator:
         "trend_tscore_90d": FeatureStat(0.0, 1.80, 0),
     }
 
-    def __init__(self, lookback_files: int = 900, min_samples: int = 80):
+    def __init__(self, lookback_files: int = 900, min_samples: int = 80, max_file_date: str | None = None):
         self.lookback_files = lookback_files
         self.min_samples = min_samples
+        self.max_file_date = max_file_date
         self.feature_stats: dict[str, FeatureStat] = dict(self.DEFAULT_STATS)
         self.cycle_priors: dict[str, float] = {}
         self._fit_from_processed_history()
@@ -60,8 +61,28 @@ class HistoricalFeatureCalibrator:
         except (TypeError, ValueError):
             return float(default)
 
+    def _extract_date_from_filename(self, file_path) -> str | None:
+        name = file_path.stem  # processed_data_YYYY-MM-DD
+        if not name.startswith("processed_data_"):
+            return None
+        raw_date = name.replace("processed_data_", "", 1)
+        if len(raw_date) != 10:
+            return None
+        return raw_date
+
     def _fit_from_processed_history(self):
-        files = sorted(PROCESSED_DATA_DIR.glob("processed_data_*.json"))[-self.lookback_files :]
+        files = sorted(PROCESSED_DATA_DIR.glob("processed_data_*.json"))
+        if self.max_file_date:
+            filtered_files = []
+            for file_path in files:
+                file_date = self._extract_date_from_filename(file_path)
+                if file_date is None:
+                    continue
+                if file_date <= self.max_file_date:
+                    filtered_files.append(file_path)
+            files = filtered_files
+
+        files = files[-self.lookback_files :]
         if not files:
             return
 
@@ -220,8 +241,11 @@ class AdvancedQuantScorer:
     - Explicit uncertainty penalty to reduce exposure under conflicting evidence.
     """
 
-    def __init__(self, lookback_files: int = 900):
-        self._calibrator = HistoricalFeatureCalibrator(lookback_files=lookback_files)
+    def __init__(self, lookback_files: int = 900, calibrator_max_date: str | None = None):
+        self._calibrator = HistoricalFeatureCalibrator(
+            lookback_files=lookback_files,
+            max_file_date=calibrator_max_date,
+        )
 
     def _safe_float(self, value, default=0.0):
         try:
@@ -571,20 +595,36 @@ class QuantScorer:
     - blend: convex combination of legacy and advanced outputs
     """
 
-    def __init__(self, mode: str = "legacy", advanced_weight: float = 0.25):
+    def __init__(
+        self,
+        mode: str = "legacy",
+        advanced_weight: float = 0.25,
+        lookback_files: int = 900,
+        calibrator_max_date: str | None = None,
+    ):
         self.mode = mode
         self.advanced_weight = max(0.0, min(1.0, advanced_weight))
+        self.lookback_files = lookback_files
+        self.calibrator_max_date = calibrator_max_date
         self._legacy = LegacyQuantScorer()
-        self._advanced = AdvancedQuantScorer()
+        self._advanced: AdvancedQuantScorer | None = None
+
+    def _get_advanced(self) -> AdvancedQuantScorer:
+        if self._advanced is None:
+            self._advanced = AdvancedQuantScorer(
+                lookback_files=self.lookback_files,
+                calibrator_max_date=self.calibrator_max_date,
+            )
+        return self._advanced
 
     def calculate_scores(self, data: dict) -> dict:
         if self.mode == "legacy":
             return self._legacy.calculate_scores(data)
         if self.mode in {"advanced", "quant"}:
-            return self._advanced.calculate_scores(data)
+            return self._get_advanced().calculate_scores(data)
         if self.mode == "blend":
             legacy_result = self._legacy.calculate_scores(data)
-            advanced_result = self._advanced.calculate_scores(data)
+            advanced_result = self._get_advanced().calculate_scores(data)
 
             lw = 1.0 - self.advanced_weight
             aw = self.advanced_weight
