@@ -3,7 +3,10 @@ from flask_cors import CORS
 import pandas as pd
 import json
 import re
+from datetime import datetime, timedelta
+from functools import lru_cache
 from pathlib import Path
+import yfinance as yf
 
 from src.utils.project_paths import ACCOUNTING_DIR, PROCESSED_DATA_DIR, REPORTS_DIR, SIGNALS_DIR
 
@@ -59,19 +62,152 @@ def parse_daily_reports():
     return reports
 
 
-def enrich_reports(reports):
-    scores_path = SIGNALS_DIR / 'score_history.csv'
+@lru_cache(maxsize=8)
+def fetch_btc_close_lookup(start_date: str, end_date: str) -> dict[str, float]:
+    """Fetch BTC close prices for the date window to support chart backfill."""
+    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+    end_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
 
-    if scores_path.exists():
-        scores_df = pd.read_csv(scores_path).dropna()
-        if not scores_df.empty:
-            scores_df['Date'] = pd.to_datetime(scores_df['Date']).dt.strftime('%Y-%m-%d')
-            scores_df = scores_df.drop_duplicates(subset=['Date'], keep='last')
-            score_lookup = scores_df.set_index('Date').to_dict('index')
-        else:
-            score_lookup = {}
-    else:
-        score_lookup = {}
+    try:
+        hist = yf.download(
+            "BTC-USD",
+            start=start_dt.strftime("%Y-%m-%d"),
+            end=end_dt.strftime("%Y-%m-%d"),
+            progress=False,
+            auto_adjust=False,
+        )
+    except Exception as e:
+        print(f"Error fetching BTC history for backfill: {e}")
+        return {}
+
+    if hist is None or hist.empty:
+        return {}
+
+    if isinstance(hist.columns, pd.MultiIndex):
+        hist.columns = hist.columns.get_level_values(0)
+
+    if "Close" not in hist.columns:
+        return {}
+
+    close_series = hist["Close"].dropna()
+    return {
+        pd.Timestamp(idx).strftime("%Y-%m-%d"): float(value)
+        for idx, value in close_series.items()
+    }
+
+
+def fill_missing_report_days(reports: list[dict]) -> list[dict]:
+    """
+    Fill date gaps between report files to keep dashboard charts continuous.
+    Assumes no trades occurred in missing days and reprices BTC position daily.
+    """
+    if not reports:
+        return []
+
+    reports_sorted = sorted(reports, key=lambda row: row["date"])
+    report_by_date = {row["date"]: dict(row) for row in reports_sorted}
+
+    start_date = datetime.strptime(reports_sorted[0]["date"], "%Y-%m-%d").date()
+    end_date = datetime.strptime(reports_sorted[-1]["date"], "%Y-%m-%d").date()
+
+    price_lookup = fetch_btc_close_lookup(start_date.isoformat(), end_date.isoformat())
+    initial_capital = 2000.0
+    initial_price = reports_sorted[0].get("btc_price", 0) or price_lookup.get(start_date.isoformat(), 0.0)
+
+    filled = []
+    previous_row = None
+    current_date = start_date
+
+    while current_date <= end_date:
+        date_str = current_date.isoformat()
+
+        if date_str in report_by_date:
+            row = dict(report_by_date[date_str])
+            if row.get("btc_price", 0) <= 0 and row.get("btc_amount", 0) > 0:
+                row["btc_price"] = row["btc_value"] / row["btc_amount"]
+            filled.append(row)
+            previous_row = row
+            current_date += timedelta(days=1)
+            continue
+
+        if previous_row is None:
+            current_date += timedelta(days=1)
+            continue
+
+        btc_price = price_lookup.get(date_str, float(previous_row.get("btc_price", 0)))
+        cash = float(previous_row.get("cash", 0))
+        btc_amount = float(previous_row.get("btc_amount", 0))
+        debt = float(previous_row.get("debt", 0))
+        btc_value = btc_amount * btc_price
+        equity = cash + btc_value - debt
+
+        roi = ((equity - initial_capital) / initial_capital) * 100 if initial_capital else 0.0
+        bnh_return = ((btc_price - initial_price) / initial_price) * 100 if initial_price > 0 else 0.0
+        alpha = roi - bnh_return
+
+        synthetic_row = {
+            "date": date_str,
+            "equity": round(equity, 6),
+            "roi": round(roi, 6),
+            "alpha": round(alpha, 6),
+            "cash": round(cash, 6),
+            "btc_value": round(btc_value, 6),
+            "btc_amount": round(btc_amount, 8),
+            "debt": round(debt, 6),
+            "btc_price": round(btc_price, 6),
+        }
+
+        filled.append(synthetic_row)
+        previous_row = synthetic_row
+        current_date += timedelta(days=1)
+
+    return filled
+
+
+def build_score_lookup(report_dates: list[str]) -> dict[str, dict[str, float]]:
+    """Build a per-day score lookup and interpolate missing dates."""
+    scores_path = SIGNALS_DIR / "score_history.csv"
+    if not scores_path.exists() or not report_dates:
+        return {}
+
+    scores_df = pd.read_csv(scores_path)
+    if scores_df.empty or "Date" not in scores_df.columns:
+        return {}
+
+    scores_df = scores_df.dropna(subset=["Date"])
+    if scores_df.empty:
+        return {}
+
+    scores_df["Date"] = pd.to_datetime(scores_df["Date"]).dt.normalize()
+    scores_df["Long_Term_Score"] = pd.to_numeric(scores_df.get("Long_Term_Score"), errors="coerce")
+    scores_df["Medium_Term_Score"] = pd.to_numeric(scores_df.get("Medium_Term_Score"), errors="coerce")
+    scores_df = scores_df.drop_duplicates(subset=["Date"], keep="last").sort_values("Date")
+
+    start = pd.to_datetime(min(report_dates)).normalize()
+    end = pd.to_datetime(max(report_dates)).normalize()
+    full_index = pd.date_range(start=start, end=end, freq="D")
+
+    aligned = (
+        scores_df.set_index("Date")[["Long_Term_Score", "Medium_Term_Score"]]
+        .reindex(full_index)
+        .interpolate(method="time")
+        .ffill()
+        .bfill()
+    )
+
+    lookup = {}
+    for idx, row in aligned.iterrows():
+        lookup[idx.strftime("%Y-%m-%d")] = {
+            "Long_Term_Score": float(row["Long_Term_Score"]) if pd.notna(row["Long_Term_Score"]) else 0.0,
+            "Medium_Term_Score": float(row["Medium_Term_Score"]) if pd.notna(row["Medium_Term_Score"]) else 0.0,
+        }
+
+    return lookup
+
+
+def enrich_reports(reports):
+    report_dates = [report["date"] for report in reports if report.get("date")]
+    score_lookup = build_score_lookup(report_dates)
 
     for report in reports:
         score_row = score_lookup.get(report['date'], {})
@@ -103,7 +239,8 @@ def index():
 def get_paper_trading_history():
     """Return complete paper trading history from daily reports"""
     try:
-        reports = enrich_reports(parse_daily_reports())
+        reports = fill_missing_report_days(parse_daily_reports())
+        reports = enrich_reports(reports)
         reports = [report for report in reports if report['date'] >= PAPER_TRADING_START]
         
         return jsonify({
@@ -186,7 +323,7 @@ def get_portfolio():
 def get_price_history():
     """Return Bitcoin price history with scores from paper trading"""
     try:
-        reports = enrich_reports(parse_daily_reports())
+        reports = enrich_reports(fill_missing_report_days(parse_daily_reports()))
         
         price_data = [{
             'date': r['date'],
@@ -209,7 +346,7 @@ def get_price_history():
 def get_performance_metrics():
     """Calculate and return performance metrics from paper trading"""
     try:
-        reports = parse_daily_reports()
+        reports = fill_missing_report_days(parse_daily_reports())
         if not reports:
             return jsonify({
                 'success': False,

@@ -4,50 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bitcoin Quant Terminal</title>
+    <title>Bitcoin Quant Intelligence Deck</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script
         src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
 </head>
 
 <body>
-    <!-- Top Bar -->
-    <div class="topbar">
-        <div class="topbar-left">
-            <div class="terminal-title">
-                <span class="terminal-icon">₿</span>
-                <span class="terminal-name">QUANT TERMINAL</span>
-            </div>
-            <div class="terminal-status">
-                <span class="status-dot"></span>
-                <span class="status-text">LIVE PAPER TRADING</span>
-            </div>
-        </div>
-        <div class="topbar-right">
-            <div class="topbar-stat">
-                <span class="topbar-label">BTC/USD</span>
-                <span class="topbar-value" id="header-price">$0.00</span>
-            </div>
-            <div class="topbar-stat">
-                <span class="topbar-label">EQUITY</span>
-                <span class="topbar-value" id="header-equity">$0.00</span>
-            </div>
-            <div class="topbar-stat">
-                <span class="topbar-label">ROI</span>
-                <span class="topbar-value" id="header-roi">0.00%</span>
-            </div>
-        </div>
-    </div>
+    <div class="ambient-layer" aria-hidden="true"></div>
 
-    <!-- Main Terminal Grid -->
-    <div class="terminal-grid">
-        <!-- Left Panel: Metrics & Trades -->
-        <div class="terminal-panel panel-left">
-            <!-- Performance Section -->
-            <div class="panel-section">
+    <main class="terminal-grid">
+        <aside class="terminal-panel panel-left">
+            <section class="panel-section">
                 <div class="panel-header">
-                    <span class="panel-title">PERFORMANCE</span>
+                    <span class="panel-title">PERFORMANCE SNAPSHOT</span>
                 </div>
                 <div class="panel-content">
                     <div class="metric-row">
@@ -57,9 +32,9 @@
                             <div class="metric-sub" id="metric-return-sub">vs B&H: +0.00%</div>
                         </div>
                         <div class="metric-item">
-                            <div class="metric-label">ALPHA</div>
+                            <div class="metric-label">ALPHA EDGE</div>
                             <div class="metric-value" id="metric-alpha">0.00%</div>
-                            <div class="metric-sub" id="metric-alpha-badge">—</div>
+                            <div class="metric-sub" id="metric-alpha-badge">neutral</div>
                         </div>
                     </div>
                     <div class="metric-row">
@@ -68,22 +43,31 @@
                             <div class="metric-value" id="metric-dd">0.00%</div>
                         </div>
                         <div class="metric-item">
-                            <div class="metric-label">SHARPE RATIO</div>
+                            <div class="metric-label">SHARPE</div>
                             <div class="metric-value" id="metric-sharpe">0.00</div>
                         </div>
                     </div>
+                    <div class="metric-row">
+                        <div class="metric-item">
+                            <div class="metric-label">ROLLING VOL 30D</div>
+                            <div class="metric-value" id="metric-vol">0.00%</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">HIT RATE</div>
+                            <div class="metric-value" id="metric-hitrate">0.00%</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Portfolio Section -->
-            <div class="panel-section">
+            <section class="panel-section">
                 <div class="panel-header">
                     <span class="panel-title">PORTFOLIO STATE</span>
                 </div>
                 <div class="panel-content">
                     <div class="metric-row">
                         <div class="metric-item">
-                            <div class="metric-label">CASH BALANCE</div>
+                            <div class="metric-label">CASH</div>
                             <div class="metric-value" id="metric-cash">$0.00</div>
                         </div>
                         <div class="metric-item">
@@ -98,128 +82,142 @@
                         </div>
                         <div class="metric-item">
                             <div class="metric-label">MARKET PHASE</div>
-                            <div class="metric-value" id="metric-phase">—</div>
+                            <div class="metric-value" id="metric-regime">n/a</div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Recent Trades Section (New) -->
-            <div class="panel-section flex-grow">
+            <section class="panel-section">
+                <div class="panel-header">
+                    <span class="panel-title">QUANT MODEL CARD</span>
+                </div>
+                <div class="panel-content formula-content">
+                    <p class="formula-caption">Seven-day risk-adjusted expectation:</p>
+                    <div class="math-block">$$\hat r_{t+7}=\beta_0 + \beta_1 LT_t + \beta_2 MT_t - \lambda\sigma_{30,t}$$</div>
+                    <div class="coef-grid">
+                        <div class="coef-item">$\beta_0$ <span id="model-beta0">0.000</span></div>
+                        <div class="coef-item">$\beta_1$ <span id="model-beta-lt">0.000</span></div>
+                        <div class="coef-item">$\beta_2$ <span id="model-beta-mt">0.000</span></div>
+                        <div class="coef-item">$\lambda$ <span id="model-beta-vol">0.000</span></div>
+                    </div>
+                    <p class="formula-caption">$R^2$ explanatory power: <span id="model-r2">0.000</span></p>
+                    <div class="math-block">$$\alpha_{BTC}=R_{strategy}-R_{buy\&hold}$$</div>
+                </div>
+            </section>
+
+            <section class="panel-section flex-grow">
                 <div class="panel-header">
                     <span class="panel-title">RECENT TRADES</span>
                 </div>
-                <div class="panel-content no-padding">
+                <div class="panel-content no-padding trade-scroll">
                     <table class="trades-table">
                         <thead>
                             <tr>
                                 <th>DATE</th>
                                 <th>SIDE</th>
                                 <th>PRICE</th>
-                                <th>AMT</th>
+                                <th>BTC</th>
                             </tr>
                         </thead>
-                        <tbody id="trades-list">
-                            <!-- Populated by JS -->
-                        </tbody>
+                        <tbody id="trades-list"></tbody>
                     </table>
                 </div>
-            </div>
-        </div>
+            </section>
+        </aside>
 
-        <!-- Center Panel: Charts -->
-        <div class="terminal-panel panel-center">
-            <!-- Top Chart: Price + Scores -->
-            <div class="chart-section main-chart">
+        <section class="terminal-panel panel-center">
+            <section class="chart-section main-chart">
                 <div class="panel-header">
-                    <span class="panel-title">BTC/USD + SIGNAL OVERLAY</span>
+                    <span class="panel-title">PRICE, SIGNALS AND RISK ENVELOPE</span>
                     <div class="panel-controls">
-                        <span class="control-label">LT:</span>
-                        <span class="control-value" id="control-lt">0.0</span>
-                        <span class="control-label">MT:</span>
-                        <span class="control-value" id="control-mt">0.0</span>
+                        <span class="control-label">LT</span><span class="control-value" id="control-lt">0.0</span>
+                        <span class="control-label">MT</span><span class="control-value" id="control-mt">0.0</span>
+                        <span class="control-label">VOL</span><span class="control-value" id="control-vol">0.0%</span>
+                        <span class="control-label">SH30</span><span class="control-value" id="control-sharpe30">0.00</span>
                     </div>
                 </div>
-                <div class="panel-content">
+                <div class="panel-content chart-content">
                     <canvas id="priceChart"></canvas>
                 </div>
-            </div>
+            </section>
 
-            <!-- Bottom Chart: Performance -->
-            <div class="chart-section sub-chart">
+            <section class="chart-section sub-chart">
                 <div class="panel-header">
-                    <span class="panel-title">STRATEGY EQUITY vs BUY & HOLD</span>
+                    <span class="panel-title">EQUITY, BENCHMARK AND DRAWDOWN PRESSURE</span>
                 </div>
-                <div class="panel-content">
+                <div class="panel-content chart-content">
                     <canvas id="performanceChart"></canvas>
                 </div>
-            </div>
-        </div>
+            </section>
+        </section>
 
-        <!-- Right Panel: Signals & Allocation -->
-        <div class="terminal-panel panel-right">
-            <!-- Signal Scores -->
-            <div class="panel-section">
+        <aside class="terminal-panel panel-right">
+            <section class="panel-section">
                 <div class="panel-header">
                     <span class="panel-title">QUANT SCORES</span>
                 </div>
                 <div class="panel-content">
                     <div class="score-display">
-                        <div class="score-label">LONG-TERM</div>
+                        <div class="score-label">LONG TERM SCORE</div>
                         <div class="score-value" id="score-lt-display">0.00</div>
-                        <div class="score-bar-container">
-                            <div class="score-bar-bg">
-                                <div class="score-bar-fill" id="score-lt-bar" style="width: 50%"></div>
-                            </div>
-                            <div class="score-range">
-                                <span>-100</span>
-                                <span>0</span>
-                                <span>+100</span>
-                            </div>
+                        <div class="score-bar-bg">
+                            <div class="score-bar-fill" id="score-lt-bar" style="width: 50%"></div>
+                        </div>
+                        <div class="score-range">
+                            <span>-100</span><span>0</span><span>+100</span>
                         </div>
                     </div>
                     <div class="score-display">
-                        <div class="score-label">MEDIUM-TERM</div>
+                        <div class="score-label">MEDIUM TERM SCORE</div>
                         <div class="score-value" id="score-mt-display">0.00</div>
-                        <div class="score-bar-container">
-                            <div class="score-bar-bg">
-                                <div class="score-bar-fill" id="score-mt-bar" style="width: 50%"></div>
-                            </div>
-                            <div class="score-range">
-                                <span>-100</span>
-                                <span>0</span>
-                                <span>+100</span>
-                            </div>
+                        <div class="score-bar-bg">
+                            <div class="score-bar-fill" id="score-mt-bar" style="width: 50%"></div>
+                        </div>
+                        <div class="score-range">
+                            <span>-100</span><span>0</span><span>+100</span>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Score History -->
-            <div class="panel-section">
+            <section class="panel-section">
                 <div class="panel-header">
-                    <span class="panel-title">SCORE HISTORY (7D)</span>
+                    <span class="panel-title">SCORE DYNAMICS</span>
                 </div>
-                <div class="panel-content">
-                    <div class="score-history-container">
-                        <canvas id="scoreHistoryChart"></canvas>
-                    </div>
+                <div class="panel-content score-history-container">
+                    <canvas id="scoreHistoryChart"></canvas>
                 </div>
-            </div>
+            </section>
 
-            <!-- Portfolio Allocation (Corner) -->
-            <div class="panel-section flex-grow">
+            <section class="panel-section">
+                <div class="panel-header">
+                    <span class="panel-title">3D SIGNAL RESPONSE SURFACE</span>
+                </div>
+                <div class="panel-content plotly-container">
+                    <div id="signal-surface-3d"></div>
+                </div>
+            </section>
+
+            <section class="panel-section">
+                <div class="panel-header">
+                    <span class="panel-title">3D REGIME TRAJECTORY</span>
+                </div>
+                <div class="panel-content plotly-container">
+                    <div id="regime-trajectory-3d"></div>
+                </div>
+            </section>
+
+            <section class="panel-section flex-grow">
                 <div class="panel-header">
                     <span class="panel-title">ASSET ALLOCATION</span>
                 </div>
-                <div class="panel-content">
-                    <div class="allocation-container">
-                        <canvas id="portfolioChart"></canvas>
-                    </div>
+                <div class="panel-content allocation-container">
+                    <canvas id="portfolioChart"></canvas>
                 </div>
-            </div>
-        </div>
-    </div>
+            </section>
+        </aside>
+    </main>
 
     <script src="/static/js/dashboard.js"></script>
 </body>
