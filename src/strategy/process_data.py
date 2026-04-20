@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import yfinance as yf
 
@@ -17,12 +19,53 @@ LOGGER = logging.getLogger(__name__)
 
 # --- Helper Functions ---
 
+def _safe_last(series: pd.Series, default: float = 0.0) -> float:
+    if series is None or series.empty:
+        return float(default)
+    value = series.iloc[-1]
+    if pd.isna(value):
+        return float(default)
+    return float(value)
+
+
+def _trend_tscore(log_prices: np.ndarray) -> float:
+    if log_prices.size < 20:
+        return 0.0
+
+    x = np.arange(log_prices.size, dtype=float)
+    slope, intercept = np.polyfit(x, log_prices, 1)
+    fitted = (slope * x) + intercept
+    residuals = log_prices - fitted
+
+    dof = max(1, log_prices.size - 2)
+    mse = float(np.sum(residuals**2) / dof)
+    denom = float(np.sum((x - x.mean()) ** 2))
+    if denom <= 1e-12:
+        return 0.0
+
+    std_err = math.sqrt(mse / denom)
+    if std_err <= 1e-12:
+        return 0.0
+
+    t_score = slope / std_err
+    return float(np.clip(t_score, -8.0, 8.0))
+
+
 def fetch_historical_context(end_date_str, window_days=1460):
     """
-    Fetches historical BTC price data to calculate long-term rolling metrics (Z-Score).
+    Fetches historical BTC data and computes robust quantitative context features.
     """
+    default_context = {
+        "mvrv_zscore": 0.0,
+        "realized_vol_30d": 0.65,
+        "realized_vol_90d": 0.70,
+        "momentum_63d": 0.0,
+        "drawdown_180d": 0.0,
+        "trend_tscore_90d": 0.0,
+    }
+
     end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
-    start_date = end_date - timedelta(days=window_days + 365) # Buffer for MA calculation
+    start_date = end_date - timedelta(days=window_days + 365)  # Buffer for MA calculation
     
     LOGGER.info(
         "Fetching historical context from %s to %s",
@@ -37,28 +80,46 @@ def fetch_historical_context(end_date_str, window_days=1460):
         
         df = df.rename(columns={"Close": "price"})
         
-        # Calculate MVRV Proxy (Price / 365 SMA)
-        df['sma_365'] = df['price'].rolling(window=365).mean()
-        df['mvrv_proxy'] = df['price'] / df['sma_365']
+        # MVRV proxy and long-horizon valuation context.
+        df["sma_365"] = df["price"].rolling(window=365).mean()
+        df["mvrv_proxy"] = df["price"] / df["sma_365"]
         
         # Calculate Z-Score (4-year window)
         # We use the last available value as the current Z-Score
-        rolling_mean = df['mvrv_proxy'].rolling(window=window_days, min_periods=365).mean()
-        rolling_std = df['mvrv_proxy'].rolling(window=window_days, min_periods=365).std()
+        rolling_mean = df["mvrv_proxy"].rolling(window=window_days, min_periods=365).mean()
+        rolling_std = df["mvrv_proxy"].rolling(window=window_days, min_periods=365).std()
         
-        df['mvrv_zscore'] = (df['mvrv_proxy'] - rolling_mean) / rolling_std
-        
-        last_z = df['mvrv_zscore'].iloc[-1]
-        
-        if pd.isna(last_z):
-            LOGGER.warning("Z-Score is NaN, defaulting to 0.")
-            return 0.0
-            
-        return float(last_z)
-        
+        df["mvrv_zscore"] = (df["mvrv_proxy"] - rolling_mean) / rolling_std
+
+        # Volatility/momentum state features.
+        returns = df["price"].pct_change()
+        df["realized_vol_30d"] = returns.rolling(window=30, min_periods=10).std() * math.sqrt(365.0)
+        df["realized_vol_90d"] = returns.rolling(window=90, min_periods=20).std() * math.sqrt(365.0)
+        df["momentum_63d"] = (df["price"] / df["price"].shift(63)) - 1.0
+        rolling_peak_180 = df["price"].rolling(window=180, min_periods=30).max()
+        df["drawdown_180d"] = (df["price"] / rolling_peak_180) - 1.0
+
+        log_prices_90d = np.log(df["price"].dropna().tail(90).to_numpy(dtype=float))
+        trend_tscore_90d = _trend_tscore(log_prices_90d)
+
+        context = {
+            "mvrv_zscore": _safe_last(df["mvrv_zscore"], 0.0),
+            "realized_vol_30d": _safe_last(df["realized_vol_30d"], 0.65),
+            "realized_vol_90d": _safe_last(df["realized_vol_90d"], 0.70),
+            "momentum_63d": _safe_last(df["momentum_63d"], 0.0),
+            "drawdown_180d": _safe_last(df["drawdown_180d"], 0.0),
+            "trend_tscore_90d": trend_tscore_90d,
+        }
+
+        for key, value in list(context.items()):
+            if not math.isfinite(value):
+                context[key] = default_context[key]
+
+        return context
+
     except Exception as e:
         LOGGER.warning("Error fetching historical context: %s", e)
-        return 0.0
+        return default_context
 
 # --- Logic Functions ---
 
@@ -237,8 +298,14 @@ def process_daily_data(raw_file_path: str | Path, output_path: Path | None = Non
     # 0. Fetch Historical Context for Z-Score
     # We need the date from the timestamp
     date_str = raw_data["timestamp"][:10]
-    z_score = fetch_historical_context(date_str)
-    LOGGER.info("Calculated MVRV Z-Score: %.2f", z_score)
+    historical_context = fetch_historical_context(date_str)
+    LOGGER.info(
+        "Historical context -> z=%.2f rv30=%.2f mom63=%.2f dd180=%.2f",
+        historical_context["mvrv_zscore"],
+        historical_context["realized_vol_30d"],
+        historical_context["momentum_63d"],
+        historical_context["drawdown_180d"],
+    )
 
     processed = {
         "timestamp": raw_data["timestamp"],
@@ -246,7 +313,7 @@ def process_daily_data(raw_file_path: str | Path, output_path: Path | None = Non
         "market_data": get_market_context(raw_data),
         "metrics": {
             "mvrv": raw_data["metrics"].get("mvrv"),
-            "mvrv_zscore": z_score, # NEW: Dynamic Metric
+            "mvrv_zscore": historical_context["mvrv_zscore"],
             "sopr": raw_data["metrics"].get("sopr"),
             "rup": raw_data["metrics"].get("rup"),
             "mayer_multiple": raw_data["metrics"].get("mayer_multiple"),
@@ -254,7 +321,12 @@ def process_daily_data(raw_file_path: str | Path, output_path: Path | None = Non
             "interest_rate": raw_data["metrics"].get("interest_rate", {}).get("current_rate"),
             "m2_yoy": raw_data["metrics"].get("m2_supply", {}).get("m2_year_pct"),
             "inflation_yoy": raw_data["metrics"].get("inflation", {}).get("yoy_inflation_pct"),
-            "funding_rate": raw_data["metrics"].get("derivatives", {}).get("funding_rate")
+            "funding_rate": raw_data["metrics"].get("derivatives", {}).get("funding_rate"),
+            "realized_vol_30d": historical_context["realized_vol_30d"],
+            "realized_vol_90d": historical_context["realized_vol_90d"],
+            "momentum_63d": historical_context["momentum_63d"],
+            "drawdown_180d": historical_context["drawdown_180d"],
+            "trend_tscore_90d": historical_context["trend_tscore_90d"],
         },
         "flags": {}
     }

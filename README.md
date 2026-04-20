@@ -36,7 +36,7 @@ As of 2026-04-20:
 - Live model selection source: `data/signals/production_gate.json` (objective OOS gate artifact)
 - Fallback when gate file is missing/invalid: `production_legacy_cooldown1`
 - Current fallback profile:
-  - Scoring mode: `QuantScorer(mode="legacy")`
+  - Scoring mode: `QuantScorer(mode="quant")`
   - Allocation engine: `PortfolioManager`
   - Cooldown: `1 day`
 - Promotion policy: challengers are promoted only when objective OOS criteria are met
@@ -49,6 +49,20 @@ Implementation reference:
 ## Validation Stack
 
 Forward testing is primary. Backtests are used as secondary evidence for model promotion.
+
+## Quantitative Scoring Core
+
+The main scoring method is now designed as an adaptive quantitative engine, not a static rule set.
+
+- Robust normalization: each feature is standardized with rolling historical median/MAD from `data/processed`.
+- Regime posterior: long-term direction is estimated with a Bayesian-style posterior (prior by cycle state + evidence blocks).
+- Uncertainty control: entropy, block disagreement, and data coverage are combined into an explicit uncertainty penalty.
+- Risk-adjusted edge: final scores are produced from edge minus uncertainty/volatility pressure, improving behavior under regime shifts.
+
+Implementation reference:
+
+- `src/strategy/score.py`
+- `src/strategy/process_data.py`
 
 ### 1. Cost-Aware Model Comparison
 

@@ -14,7 +14,7 @@ GATE_FILE_PATH = SIGNALS_DIR / "production_gate.json"
 
 SUPPORTED_MODELS = {
     "production_legacy_cooldown1": {
-        "scorer_mode": "legacy",
+        "scorer_mode": "quant",
         "manager": "portfolio",
         "cooldown_days": 1,
     },
@@ -29,7 +29,7 @@ SUPPORTED_MODELS = {
         "cooldown_days": 1,
     },
     "advanced_adaptive_research": {
-        "scorer_mode": "advanced",
+        "scorer_mode": "quant",
         "manager": "advanced",
         "cooldown_days": 1,
     },

@@ -21,7 +21,7 @@ O sistema segue um pipeline em camadas:
 
 1. Coleta de dados: precos, on-chain, macro, sentimento, derivativos.
 2. Processamento de features: normalizacao, flags de regime e contexto de mercado.
-3. Scoring quantitativo: pontuacoes Long Term (LT) e Medium Term (MT).
+3. Scoring quantitativo robusto: pontuacoes Long Term (LT) e Medium Term (MT).
 4. Traducao score->ordem: portfolio managers transformam score em alocacao alvo.
 5. Execucao simulada: custos, slippage implícito por bps, debt carry e rebalance.
 6. Contabilidade: estado de carteira, historico, relatorios e atualizacao do README.
@@ -59,7 +59,55 @@ Se o gate nao existir ou estiver invalido, o sistema faz fallback seguro para:
 
 ## 4. Bloco de Sinais Quantitativos
 
-## 4.1 LegacyQuantScorer (baseline de producao)
+## 4.1 QuantScorer(mode="quant") - motor principal atual
+
+O metodo principal foi repaginado para ser quantitativo adaptativo e robusto a mudanca de padrao.
+
+Pilares matematicos:
+
+1. Normalizacao robusta por historico processado (mediana + MAD) por feature.
+2. Blocos de evidencia (valuation, macro, trend, volatility) com pesos efetivos por confiabilidade de dado.
+3. Posterior de regime bull/bear com prior de ciclo + likelihood dos blocos.
+4. Penalizacao explicita de incerteza antes de gerar o edge final.
+
+Normalizacao robusta (feature i):
+
+$$
+z_i^{rob} = \frac{x_i - \text{mediana}_i}{1.4826 \cdot MAD_i}
+$$
+
+Posterior de regime:
+
+$$
+p_{bull} = \sigma\left(\text{logit}_{prior}(cycle) + \text{logit}_{likelihood}(valuation, macro, trend, flags)\right)
+$$
+
+Penalizacao de incerteza:
+
+$$
+U = 0.45\,H(p_{bull}) + 0.35\,\text{dispersion}(signals) + 0.20\,(1-coverage)
+$$
+
+Score LT final (edge ajustado por risco):
+
+$$
+Score_{LT} = 100 \cdot \tanh\left(1.55 \cdot (Edge - 0.35U - 0.20\,VolPressure)\right)
+$$
+
+Score MT final:
+
+$$
+Score_{MT} = 100 \cdot clip\left(Base_{MT} \cdot (0.60 + 0.50\,Confidence), -1, 1\right)
+$$
+
+Vantagem pratica: o motor reduz agressividade em sinais conflitantes e em baixa cobertura estatistica, ajudando a sobreviver a regime shift.
+
+Implementacao:
+
+- [src/strategy/score.py](src/strategy/score.py)
+- [src/strategy/process_data.py](src/strategy/process_data.py)
+
+## 4.2 LegacyQuantScorer (baseline de comparacao)
 
 Estrutura:
 
@@ -76,15 +124,15 @@ $$
 Score_{MT} = 100 \cdot (v_1 \cdot Trend + v_2 \cdot Sentiment + v_3 \cdot Extension + v_4 \cdot Seasonality)
 $$
 
-## 4.2 AdvancedQuantScorer (pesquisa)
+## 4.3 Legacy e bloco de pesquisa comparativa
 
-Adiciona:
+O baseline legacy foi mantido para comparacao de desempenho e teste A/B de robustez.
 
-- transformacoes suaves tipo sigmoid;
-- penalidades de regime (derivativos, inflacao, correlacao);
-- maior sensibilidade a divergencia trend x momentum.
+Isso permite:
 
-O objetivo e reduzir comportamento binario (all-in/all-out), mantendo API compativel.
+- comparar o motor quant atual contra referencia historica;
+- medir ganho de estabilidade em mudanca de regime;
+- validar promocao para producao com criterio objetivo OOS.
 
 ## 5. Motores de Alocacao
 
@@ -194,16 +242,59 @@ Para cada caminho Monte Carlo:
 
 ## 8.3 Graficos gerados
 
-Gerados em `reports/stochastic/figures/`:
+Gerados em reports/stochastic/figures/: 
 
 - fan chart Monte Carlo (dispersao de trajetorias);
 - superficie 3D Drift x Volatilidade x Retorno esperado;
 - nuvem 3D de risco-retorno por caminho e por modelo;
 - heatmap da matriz de transicao de regimes.
 
-Relatorio final:
+Links diretos:
 
-- `docs/backtesting-reports/stochastic_validation.md`
+- [Fan Chart Monte Carlo](reports/stochastic/figures/stochastic_fan_chart.html)
+- [Superficie 3D Drift x Volatilidade](reports/stochastic/figures/stochastic_surface_3d.html)
+- [Nuvem 3D por Modelo](reports/stochastic/figures/stochastic_scatter_3d.html)
+- [Heatmap de Transicao de Regimes](reports/stochastic/figures/regime_transition_heatmap.html)
+- [Relatorio tecnico estocastico](docs/backtesting-reports/stochastic_validation.md)
+
+## 8.4 Galeria visual interativa (abrir no preview do VS Code)
+
+<details>
+	<summary>Fan Chart Monte Carlo</summary>
+	<iframe src="reports/stochastic/figures/stochastic_fan_chart.html" width="100%" height="640"></iframe>
+</details>
+
+<details>
+	<summary>Superficie 3D de sensibilidade</summary>
+	<iframe src="reports/stochastic/figures/stochastic_surface_3d.html" width="100%" height="760"></iframe>
+</details>
+
+<details>
+	<summary>Nuvem 3D risco-retorno</summary>
+	<iframe src="reports/stochastic/figures/stochastic_scatter_3d.html" width="100%" height="760"></iframe>
+</details>
+
+<details>
+	<summary>Heatmap de transicao de regimes</summary>
+	<iframe src="reports/stochastic/figures/regime_transition_heatmap.html" width="100%" height="700"></iframe>
+</details>
+
+## 8.5 Resumo quantitativo dos graficos
+
+Leituras principais dos resultados Monte Carlo (220 caminhos):
+
+| Modelo | Mean Return | VaR 95% | CVaR 95% | Mean Max DD | P(Beat BnH) |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| production_legacy_cooldown1 | +2.87% | -19.39% | -25.47% | -11.94% | 56.82% |
+| legacy_cooldown3_baseline | +2.96% | -16.24% | -22.57% | -11.33% | 55.91% |
+| legacy_confidence_research | +1.53% | -8.56% | -11.31% | -6.18% | 53.18% |
+| advanced_adaptive_research | +2.65% | -19.57% | -23.71% | -18.91% | 44.09% |
+
+Arquivos de apoio:
+
+- [Resumo por modelo](tests/backtest/stochastic_summary.csv)
+- [Resultados por caminho](tests/backtest/stochastic_path_results.csv)
+- [Grid da superficie 3D](tests/backtest/stochastic_surface_grid.csv)
 
 ## 9. Interpretacao Quantitativa dos Resultados
 
@@ -247,7 +338,7 @@ python tests/backtest/stochastic_calculus_validation.py
 
 O modelo atual combina:
 
-- regras transparentes e auditaveis,
+- inferencia quantitativa robusta e auditavel,
 - governanca estatistica para promocoes,
 - validacao historica OOS,
 - e estresse estocastico multirregime com visualizacao avancada.
