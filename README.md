@@ -4,12 +4,6 @@ Systematic Bitcoin allocation pipeline with forward testing first, honest backte
 
 ## 1) Forward Test Results
 
-Primary live metric:
-
-$$
-\alpha_{BTC} = ROI_{strategy} - ROI_{buy\&hold}
-$$
-
 <!-- live-stats:start -->
 ## Forward Testing Snapshot
 *Forward testing since Nov 23, 2025. Auto-updated by daily pipeline.*
