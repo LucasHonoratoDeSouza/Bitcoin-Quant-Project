@@ -4,12 +4,6 @@ Systematic Bitcoin allocation pipeline with forward testing first, honest backte
 
 ## 1) Forward Test Results
 
-Primary live metric:
-
-$$
-\alpha_{BTC} = ROI_{strategy} - ROI_{buy\&hold}
-$$
-
 <!-- live-stats:start -->
 ## Forward Testing Snapshot
 *Forward testing since Nov 23, 2025. Auto-updated by daily pipeline.*
@@ -18,10 +12,10 @@ $$
 | Metric | Value | Description |
 | :--- | :--- | :--- |
 | **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
-| **Current Equity** | `$1,921.96` | Updated from the latest paper trading snapshot |
-| **Alpha vs BTC** | `+8.59%` | Strategy ROI minus BTC buy-and-hold ROI over the same forward-testing window |
-| **Net Profit** | `$-78.04` | **-3.90%** |
-| **Avg. Monthly Return** | `-0.81%` | Projected (30-day) |
+| **Current Equity** | `$1,919.04` | Updated from the latest paper trading snapshot |
+| **Alpha vs BTC** | `+8.85%` | Strategy ROI minus BTC buy-and-hold ROI over the same forward-testing window |
+| **Net Profit** | `$-80.96` | **-4.05%** |
+| **Avg. Monthly Return** | `-0.83%` | Projected (30-day) |
 | **Win Rate** | `0.0%` | 0 trades executed |
 
 > **Status**: Active | Drawdown
