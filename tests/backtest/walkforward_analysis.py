@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import argparse
 from datetime import date, datetime, timedelta
+import json
 from pathlib import Path
 import sys
 import math
@@ -26,11 +28,16 @@ TEST_DAYS = 120
 PURGE_DAYS = 7
 EMBARGO_DAYS = 3
 FOLD_STEP_DAYS = 60
+TARGET_MIN_FOLDS = 28
+FOLD_STEP_CANDIDATES = (60, 45, 30, 20, 15)
 BOOTSTRAP_SAMPLES = 3000
 BOOTSTRAP_SEED = 42
+DEFAULT_BOOTSTRAP_METHOD = "block"
+DEFAULT_BLOCK_LENGTH = 7
 
 CSV_PATH = Path("tests/backtest/walkforward_results.csv")
 SUMMARY_PATH = Path("docs/backtesting-reports/walkforward_analysis.md")
+GATE_PATH = Path("data/signals/production_gate.json")
 
 
 def to_date(date_str: str) -> date:
@@ -121,7 +128,34 @@ def _annualized_sharpe(values: np.ndarray) -> float:
     return float((values.mean() / stdev) * math.sqrt(365.0))
 
 
-def bootstrap_significance(label: str, lhs_returns: list[float], rhs_returns: list[float]) -> dict:
+def _bootstrap_indices_iid(n_obs: int, rng: np.random.Generator) -> np.ndarray:
+    return rng.integers(0, n_obs, size=n_obs)
+
+
+def _bootstrap_indices_block(
+    n_obs: int,
+    rng: np.random.Generator,
+    block_length: int,
+) -> np.ndarray:
+    if block_length <= 1:
+        return _bootstrap_indices_iid(n_obs, rng)
+
+    indices: list[int] = []
+    while len(indices) < n_obs:
+        start = int(rng.integers(0, n_obs))
+        indices.extend((start + i) % n_obs for i in range(block_length))
+
+    return np.array(indices[:n_obs], dtype=int)
+
+
+def bootstrap_significance(
+    label: str,
+    lhs_returns: list[float],
+    rhs_returns: list[float],
+    samples: int,
+    method: str,
+    block_length: int,
+) -> dict:
     lhs = np.array(lhs_returns, dtype=float)
     rhs = np.array(rhs_returns, dtype=float)
 
@@ -137,6 +171,7 @@ def bootstrap_significance(label: str, lhs_returns: list[float], rhs_returns: li
             "delta_sharpe_ci_low": 0.0,
             "delta_sharpe_ci_high": 0.0,
             "delta_sharpe_p_value": 1.0,
+            "bootstrap_method": method,
         }
 
     n_obs = min(lhs.size, rhs.size)
@@ -144,11 +179,15 @@ def bootstrap_significance(label: str, lhs_returns: list[float], rhs_returns: li
     rhs = rhs[:n_obs]
 
     rng = np.random.default_rng(BOOTSTRAP_SEED)
-    alpha_samples = np.zeros(BOOTSTRAP_SAMPLES, dtype=float)
-    sharpe_diff_samples = np.zeros(BOOTSTRAP_SAMPLES, dtype=float)
+    alpha_samples = np.zeros(samples, dtype=float)
+    sharpe_diff_samples = np.zeros(samples, dtype=float)
 
-    for i in range(BOOTSTRAP_SAMPLES):
-        idx = rng.integers(0, n_obs, size=n_obs)
+    for i in range(samples):
+        if method == "block":
+            idx = _bootstrap_indices_block(n_obs, rng, block_length)
+        else:
+            idx = _bootstrap_indices_iid(n_obs, rng)
+
         lhs_sample = lhs[idx]
         rhs_sample = rhs[idx]
 
@@ -160,8 +199,8 @@ def bootstrap_significance(label: str, lhs_returns: list[float], rhs_returns: li
     delta_sharpe = _annualized_sharpe(lhs) - _annualized_sharpe(rhs)
     sharpe_ci = np.percentile(sharpe_diff_samples, [2.5, 97.5])
 
-    alpha_p_value = float((np.sum(alpha_samples <= 0.0) + 1) / (BOOTSTRAP_SAMPLES + 1))
-    sharpe_p_value = float((np.sum(sharpe_diff_samples <= 0.0) + 1) / (BOOTSTRAP_SAMPLES + 1))
+    alpha_p_value = float((np.sum(alpha_samples <= 0.0) + 1) / (samples + 1))
+    sharpe_p_value = float((np.sum(sharpe_diff_samples <= 0.0) + 1) / (samples + 1))
 
     return {
         "comparison": label,
@@ -174,10 +213,19 @@ def bootstrap_significance(label: str, lhs_returns: list[float], rhs_returns: li
         "delta_sharpe_ci_low": round(float(sharpe_ci[0]), 3),
         "delta_sharpe_ci_high": round(float(sharpe_ci[1]), 3),
         "delta_sharpe_p_value": round(sharpe_p_value, 4),
+        "bootstrap_method": method,
     }
 
 
-def build_folds(first_date: str, last_date: str) -> list[dict]:
+def build_folds(
+    first_date: str,
+    last_date: str,
+    train_days: int,
+    test_days: int,
+    purge_days: int,
+    embargo_days: int,
+    fold_step_days: int,
+) -> list[dict]:
     folds = []
     cursor = to_date(first_date)
     end_limit = to_date(last_date)
@@ -185,33 +233,56 @@ def build_folds(first_date: str, last_date: str) -> list[dict]:
 
     while True:
         train_start = cursor
-        train_end = train_start + timedelta(days=TRAIN_DAYS - 1)
+        train_end = train_start + timedelta(days=train_days - 1)
 
-        test_start = train_end + timedelta(days=PURGE_DAYS + 1)
-        test_end = test_start + timedelta(days=TEST_DAYS - 1)
+        test_start = train_end + timedelta(days=purge_days + 1)
+        test_end = test_start + timedelta(days=test_days - 1)
 
         if test_end > end_limit:
             break
-
-        embargo_start = test_end + timedelta(days=1)
-        embargo_end = test_end + timedelta(days=EMBARGO_DAYS)
 
         folds.append(
             {
                 "fold": fold_id,
                 "train_start": to_str(train_start),
                 "train_end": to_str(train_end),
-                "purge_days": PURGE_DAYS,
+                "purge_days": purge_days,
                 "test_start": to_str(test_start),
                 "test_end": to_str(test_end),
-                "embargo_days": EMBARGO_DAYS,
+                "embargo_days": embargo_days,
             }
         )
 
-        cursor = cursor + timedelta(days=FOLD_STEP_DAYS)
+        cursor = cursor + timedelta(days=fold_step_days)
         fold_id += 1
 
     return folds
+
+
+def choose_fold_schedule(first_date: str, last_date: str, target_min_folds: int) -> tuple[int, list[dict]]:
+    candidate_folds: list[tuple[int, list[dict]]] = []
+
+    for step in FOLD_STEP_CANDIDATES:
+        folds = build_folds(
+            first_date=first_date,
+            last_date=last_date,
+            train_days=TRAIN_DAYS,
+            test_days=TEST_DAYS,
+            purge_days=PURGE_DAYS,
+            embargo_days=EMBARGO_DAYS,
+            fold_step_days=step,
+        )
+        candidate_folds.append((step, folds))
+
+    if target_min_folds <= 0:
+        return candidate_folds[0]
+
+    for step, folds in candidate_folds:
+        if len(folds) >= target_min_folds:
+            return step, folds
+
+    # Fallback: use the densest schedule if target cannot be reached.
+    return candidate_folds[-1]
 
 
 def aggregate_oos(df: pd.DataFrame) -> pd.DataFrame:
@@ -292,12 +363,143 @@ def recommendation_table(summary_df: pd.DataFrame) -> list[tuple[str, str, str]]
     return rows
 
 
+def _bootstrap_lookup(bootstrap_rows: list[dict]) -> dict[str, dict]:
+    return {row["comparison"]: row for row in bootstrap_rows}
+
+
+def build_objective_gate(
+    summary_df: pd.DataFrame,
+    bootstrap_rows: list[dict],
+    selected_fold_step: int,
+    achieved_folds: int,
+    target_min_folds: int,
+    bootstrap_method: str,
+    bootstrap_samples: int,
+) -> dict:
+    incumbent_model = "production_legacy_cooldown1"
+    baseline_model = "legacy_cooldown3_baseline"
+
+    row_map = {row["model"]: row for row in summary_df.to_dict("records")}
+    incumbent = row_map.get(incumbent_model)
+    if incumbent is None:
+        raise RuntimeError("Incumbent model not found in walk-forward summary.")
+
+    lookup = _bootstrap_lookup(bootstrap_rows)
+
+    evaluations = []
+    approved = []
+
+    for model_name, row in row_map.items():
+        if model_name in {incumbent_model, baseline_model}:
+            continue
+
+        cmp_key = f"{model_name}_vs_production"
+        bnh_key = f"{model_name}_vs_buy_and_hold"
+
+        cmp_stats = lookup.get(cmp_key, {})
+        bnh_stats = lookup.get(bnh_key, {})
+
+        return_delta = float(row["mean_return_pct"] - incumbent["mean_return_pct"])
+        sharpe_delta = float(row["mean_sharpe"] - incumbent["mean_sharpe"])
+        drawdown_delta = float(row["worst_drawdown_pct"] - incumbent["worst_drawdown_pct"])
+
+        passes_performance_checks = {
+            "mean_return_delta": return_delta >= 0.10,
+            "mean_sharpe_delta": sharpe_delta >= 0.01,
+            "worst_drawdown_delta": drawdown_delta >= -0.10,
+        }
+        passes_performance = sum(passes_performance_checks.values()) >= 2
+
+        alpha_p_value = float(cmp_stats.get("alpha_p_value", 1.0))
+        delta_sharpe_p_value = float(cmp_stats.get("delta_sharpe_p_value", 1.0))
+        bnh_delta_sharpe_p_value = float(bnh_stats.get("delta_sharpe_p_value", 1.0))
+
+        passes_significance = (alpha_p_value <= 0.10) or (delta_sharpe_p_value <= 0.10)
+        passes_vs_bnh = bnh_delta_sharpe_p_value <= 0.05
+        passes_fold_coverage = int(row["folds"]) >= target_min_folds
+
+        approved_for_promotion = (
+            passes_performance
+            and passes_significance
+            and passes_vs_bnh
+            and passes_fold_coverage
+        )
+
+        decision = "PROMOTE" if approved_for_promotion else "DO NOT PROMOTE"
+
+        evidence = (
+            f"performance={'yes' if passes_performance else 'no'}, "
+            f"significance={'yes' if passes_significance else 'no'}, "
+            f"vs_bnh={'yes' if passes_vs_bnh else 'no'}, "
+            f"folds={'yes' if passes_fold_coverage else 'no'}"
+        )
+
+        evaluation = {
+            "candidate": model_name,
+            "mean_return_delta_pct": round(return_delta, 2),
+            "mean_sharpe_delta": round(sharpe_delta, 3),
+            "worst_drawdown_delta_pct": round(drawdown_delta, 2),
+            "alpha_p_value_vs_production": round(alpha_p_value, 4),
+            "delta_sharpe_p_value_vs_production": round(delta_sharpe_p_value, 4),
+            "delta_sharpe_p_value_vs_bnh": round(bnh_delta_sharpe_p_value, 4),
+            "evidence": evidence,
+            "decision": decision,
+        }
+        evaluations.append(evaluation)
+
+        if approved_for_promotion:
+            approved.append(evaluation)
+
+    selected_model = incumbent_model
+    selection_reason = "No challenger met objective out-of-sample promotion criteria."
+
+    if approved:
+        approved.sort(
+            key=lambda row: (
+                row["mean_return_delta_pct"],
+                row["mean_sharpe_delta"],
+                row["worst_drawdown_delta_pct"],
+            ),
+            reverse=True,
+        )
+        selected_model = approved[0]["candidate"]
+        selection_reason = "Challenger met objective gate and outperformed incumbent on OOS evidence."
+
+    return {
+        "generated_on": datetime.now().strftime("%Y-%m-%d"),
+        "policy_version": "oos_gate_v1",
+        "incumbent_model": incumbent_model,
+        "selected_model": selected_model,
+        "promotion_allowed": selected_model != incumbent_model,
+        "selection_reason": selection_reason,
+        "coverage": {
+            "target_min_folds": target_min_folds,
+            "achieved_folds": achieved_folds,
+            "selected_fold_step_days": selected_fold_step,
+        },
+        "bootstrap": {
+            "method": bootstrap_method,
+            "samples": bootstrap_samples,
+        },
+        "evaluations": evaluations,
+    }
+
+
+def write_gate_artifact(gate_payload: dict) -> None:
+    GATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    GATE_PATH.write_text(json.dumps(gate_payload, indent=2), encoding="utf-8")
+
+
 def write_outputs(
     results_df: pd.DataFrame,
     fold_meta: list[dict],
     summary_df: pd.DataFrame,
     recommendations: list[tuple[str, str, str]],
     bootstrap_rows: list[dict],
+    selected_fold_step: int,
+    target_min_folds: int,
+    bootstrap_method: str,
+    gate_payload: dict,
 ) -> None:
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
     SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -315,7 +517,8 @@ def write_outputs(
     lines.append(f"- Test window: `{TEST_DAYS}` days")
     lines.append(f"- Purge gap: `{PURGE_DAYS}` days")
     lines.append(f"- Embargo gap: `{EMBARGO_DAYS}` days")
-    lines.append(f"- Fold step: `{FOLD_STEP_DAYS}` days")
+    lines.append(f"- Fold step (selected): `{selected_fold_step}` days")
+    lines.append(f"- Target minimum folds: `{target_min_folds}`")
     lines.append(f"- Number of folds: `{len(fold_meta)}`")
     lines.append("")
 
@@ -357,6 +560,8 @@ def write_outputs(
         lines.append("")
         lines.append("## Bootstrap Significance (OOS Daily Returns)")
         lines.append("")
+        lines.append(f"Method: `{bootstrap_method}`")
+        lines.append("")
         lines.append(
             "| Comparison | Obs | Annualized Alpha | Alpha 95% CI | p(alpha<=0) | Delta Sharpe | Delta Sharpe 95% CI | p(delta_sharpe<=0) |"
         )
@@ -370,16 +575,45 @@ def write_outputs(
             )
 
     lines.append("")
+    lines.append("## Objective Production Gate")
+    lines.append("")
+    lines.append(f"- Incumbent: `{gate_payload['incumbent_model']}`")
+    lines.append(f"- Selected live model: `{gate_payload['selected_model']}`")
+    lines.append(
+        f"- Promotion allowed: `{'yes' if gate_payload['promotion_allowed'] else 'no'}`"
+    )
+    lines.append(f"- Selection rationale: {gate_payload['selection_reason']}")
+    lines.append(f"- Gate artifact: `{GATE_PATH.as_posix()}`")
+    lines.append("")
+    lines.append(
+        "| Candidate | Delta Return vs Incumbent | Delta Sharpe | Delta Worst DD | p(alpha<=0) vs Incumbent | p(delta_sharpe<=0) vs Incumbent | p(delta_sharpe<=0) vs BnH | Decision |"
+    )
+    lines.append("| :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- |")
+
+    for evaluation in gate_payload.get("evaluations", []):
+        lines.append(
+            "| {candidate} | {mean_return_delta_pct:+.2f}% | {mean_sharpe_delta:+.3f} | {worst_drawdown_delta_pct:+.2f}% | {alpha_p_value_vs_production:.4f} | {delta_sharpe_p_value_vs_production:.4f} | {delta_sharpe_p_value_vs_bnh:.4f} | **{decision}** |".format(
+                **evaluation
+            )
+        )
+
+    lines.append("")
     lines.append("## Notes")
     lines.append("")
     lines.append("- This validation is strictly out-of-sample by fold test windows.")
     lines.append("- Purge and embargo are temporal guards to reduce leakage across adjacent windows.")
     lines.append("- Strategy parameters are fixed; no per-fold re-optimization is performed.")
+    lines.append("- Production candidate promotion is now derived from objective OOS gate outputs.")
 
     SUMMARY_PATH.write_text("\n".join(lines), encoding="utf-8")
 
 
-def run_walkforward_analysis() -> None:
+def run_walkforward_analysis(
+    target_min_folds: int = TARGET_MIN_FOLDS,
+    bootstrap_samples: int = BOOTSTRAP_SAMPLES,
+    bootstrap_method: str = DEFAULT_BOOTSTRAP_METHOD,
+    block_length: int = DEFAULT_BLOCK_LENGTH,
+) -> None:
     loader = BacktestDataLoader(start_date=START_DATE)
     loader.fetch_data()
     daily_data = list(loader.generator())
@@ -389,7 +623,7 @@ def run_walkforward_analysis() -> None:
 
     first_date = daily_data[0]["timestamp"][:10]
     last_date = daily_data[-1]["timestamp"][:10]
-    folds = build_folds(first_date, last_date)
+    selected_fold_step, folds = choose_fold_schedule(first_date, last_date, target_min_folds)
 
     if not folds:
         raise RuntimeError("Not enough data to build walk-forward folds.")
@@ -484,24 +718,99 @@ def run_walkforward_analysis() -> None:
             "production_vs_baseline",
             oos_returns["production_legacy_cooldown1"],
             oos_returns["legacy_cooldown3_baseline"],
+            samples=bootstrap_samples,
+            method=bootstrap_method,
+            block_length=block_length,
         ),
         bootstrap_significance(
             "production_vs_buy_and_hold",
             oos_returns["production_legacy_cooldown1"],
             oos_returns["buy_and_hold"],
+            samples=bootstrap_samples,
+            method=bootstrap_method,
+            block_length=block_length,
         ),
         bootstrap_significance(
-            "confidence_vs_production",
+            "legacy_confidence_research_vs_production",
             oos_returns["legacy_confidence_research"],
             oos_returns["production_legacy_cooldown1"],
+            samples=bootstrap_samples,
+            method=bootstrap_method,
+            block_length=block_length,
+        ),
+        bootstrap_significance(
+            "legacy_confidence_research_vs_buy_and_hold",
+            oos_returns["legacy_confidence_research"],
+            oos_returns["buy_and_hold"],
+            samples=bootstrap_samples,
+            method=bootstrap_method,
+            block_length=block_length,
+        ),
+        bootstrap_significance(
+            "advanced_adaptive_research_vs_production",
+            oos_returns["advanced_adaptive_research"],
+            oos_returns["production_legacy_cooldown1"],
+            samples=bootstrap_samples,
+            method=bootstrap_method,
+            block_length=block_length,
+        ),
+        bootstrap_significance(
+            "advanced_adaptive_research_vs_buy_and_hold",
+            oos_returns["advanced_adaptive_research"],
+            oos_returns["buy_and_hold"],
+            samples=bootstrap_samples,
+            method=bootstrap_method,
+            block_length=block_length,
         ),
     ]
 
-    write_outputs(results_df, folds, summary_df, recommendations, bootstrap_rows)
+    gate_payload = build_objective_gate(
+        summary_df=summary_df,
+        bootstrap_rows=bootstrap_rows,
+        selected_fold_step=selected_fold_step,
+        achieved_folds=len(folds),
+        target_min_folds=target_min_folds,
+        bootstrap_method=bootstrap_method,
+        bootstrap_samples=bootstrap_samples,
+    )
+
+    write_outputs(
+        results_df=results_df,
+        fold_meta=folds,
+        summary_df=summary_df,
+        recommendations=recommendations,
+        bootstrap_rows=bootstrap_rows,
+        selected_fold_step=selected_fold_step,
+        target_min_folds=target_min_folds,
+        bootstrap_method=bootstrap_method,
+        gate_payload=gate_payload,
+    )
+    write_gate_artifact(gate_payload)
 
     print("Walk-forward analysis completed.")
+    print(f"Selected fold step: {selected_fold_step} days | Folds: {len(folds)}")
+    print(f"Production gate selected model: {gate_payload['selected_model']}")
     print(summary_df)
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run purged/embargo walk-forward analysis.")
+    parser.add_argument("--target-min-folds", type=int, default=TARGET_MIN_FOLDS)
+    parser.add_argument("--bootstrap-samples", type=int, default=BOOTSTRAP_SAMPLES)
+    parser.add_argument(
+        "--bootstrap-method",
+        choices=["iid", "block"],
+        default=DEFAULT_BOOTSTRAP_METHOD,
+    )
+    parser.add_argument("--block-length", type=int, default=DEFAULT_BLOCK_LENGTH)
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    run_walkforward_analysis()
+    args = parse_args()
+    run_walkforward_analysis(
+        target_min_folds=args.target_min_folds,
+        bootstrap_samples=args.bootstrap_samples,
+        bootstrap_method=args.bootstrap_method,
+        block_length=args.block_length,
+    )

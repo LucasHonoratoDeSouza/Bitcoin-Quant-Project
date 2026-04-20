@@ -43,11 +43,17 @@ class TestConfidencePortfolioManager(unittest.TestCase):
 
         self.assertIsNotNone(order)
         self.assertIn("Confidence", order.reason)
+        self.assertIn("RiskBudget", order.reason)
 
     def test_confidence_signal_monotonicity(self):
         high = self.pm._signal_confidence(80, 70)
         low = self.pm._signal_confidence(20, -20)
         self.assertGreater(high, low)
+
+    def test_risk_budget_is_lower_in_bear_regime(self):
+        bullish = self.pm._risk_budget(70, 40)
+        bearish = self.pm._risk_budget(-70, -30)
+        self.assertGreater(bullish, bearish)
 
 
 if __name__ == "__main__":

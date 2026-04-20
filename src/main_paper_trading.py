@@ -5,9 +5,8 @@ import json
 import logging
 from pathlib import Path
 
-from src.strategy.score import QuantScorer
-from src.execution.portfolio_manager import PortfolioManager
 from src.execution.accounting import AccountingSystem
+from src.execution.production_gate import build_live_components
 from src.utils.project_paths import (
     LATEST_REPORT_PATH,
     REPORTS_DIR,
@@ -77,10 +76,16 @@ def run_daily_paper_trading(processed_file_path: str | Path | None = None) -> di
     current_price = data["market_data"]["current_price"]
     date_str = data["timestamp"][:10]
 
-    # 4. Calculate Scores
-    # Backtest-gated default: legacy scoring remains production mode until
-    # advanced candidates beat it out-of-sample.
-    scorer = QuantScorer(mode="legacy")
+    # 4. Resolve live model from objective OOS gate output.
+    live_setup = build_live_components(min_trade_usd=20.0)
+    scorer = live_setup["scorer"]
+    pm = live_setup["manager"]
+    LOGGER.info(
+        "Live model resolved: %s (source=%s)",
+        live_setup["model"],
+        live_setup["source"],
+    )
+
     analysis = scorer.calculate_scores(data)
     scores = analysis["scores"]
     
@@ -104,9 +109,6 @@ def run_daily_paper_trading(processed_file_path: str | Path | None = None) -> di
         accounting.initialize(current_price)
         
     state = accounting.get_state()
-    
-    # Tuned cooldown based on 2026-04-19 model comparison.
-    pm = PortfolioManager(min_trade_usd=20.0, cooldown_days=1)
     
     # Retrieve last_trade_date and current_date for order calculation
     last_trade_date = state.get("last_trade_date")
@@ -152,6 +154,8 @@ def run_daily_paper_trading(processed_file_path: str | Path | None = None) -> di
         "latest_report_path": LATEST_REPORT_PATH,
         "executed_order": order.side if order else None,
         "equity": snapshot["equity"],
+        "active_model": live_setup["model"],
+        "gate_source": live_setup["source"],
     }
 
 if __name__ == "__main__":
