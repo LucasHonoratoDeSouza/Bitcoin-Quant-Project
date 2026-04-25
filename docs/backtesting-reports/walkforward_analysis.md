@@ -1,6 +1,6 @@
 # Walk-Forward Purged/Embargo Analysis
 
-Generated on: **2026-04-24**
+Generated on: **2026-04-25**
 
 ## Configuration
 - Start date: `2020-01-01`

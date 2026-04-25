@@ -1,5 +1,5 @@
 {
-  "generated_on": "2026-04-24",
+  "generated_on": "2026-04-25",
   "policy_version": "oos_gate_v1",
   "incumbent_model": "production_legacy_cooldown1",
   "selected_model": "production_legacy_cooldown1",
