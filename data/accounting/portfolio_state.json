@@ -1,6 +1,6 @@
 {
-    "cash": 1355.2468817197466,
-    "btc_amount": 0.007579119687716738,
+    "cash": 1585.2068503486512,
+    "btc_amount": 0.004546718220982987,
     "debt": 0.0,
     "initial_capital": 2000.0,
     "history": [
@@ -543,7 +543,17 @@
             "debt": 0.0,
             "equity": 1936.07,
             "interest_paid": 0.0
+        },
+        {
+            "date": "2026-04-29",
+            "price": 75834.27562333894,
+            "cash": 1585.21,
+            "btc_amount": 0.004546718220982987,
+            "btc_value": 344.8,
+            "debt": 0.0,
+            "equity": 1930.0,
+            "interest_paid": 0.0
         }
     ],
-    "last_trade_date": "2026-04-27 00:00:00"
+    "last_trade_date": "2026-04-29 00:00:00"
 }
