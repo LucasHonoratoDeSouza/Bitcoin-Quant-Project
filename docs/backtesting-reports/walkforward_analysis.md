@@ -1,6 +1,6 @@
 # Walk-Forward Purged/Embargo Analysis
 
-Generated on: **2026-05-01**
+Generated on: **2026-05-02**
 
 ## Configuration
 - Start date: `2020-01-01`
@@ -74,8 +74,8 @@ Method: `block`
 | production_vs_buy_and_hold | 3451 | -22.86% | [-41.56%, -3.71%] | 0.9903 | +0.209 | [-0.149, +0.559] | 0.1223 |
 | legacy_confidence_research_vs_production | 3451 | -11.51% | [-19.47%, -4.18%] | 0.9990 | -0.000 | [-0.199, +0.204] | 0.4938 |
 | legacy_confidence_research_vs_buy_and_hold | 3451 | -34.38% | [-56.65%, -11.60%] | 0.9983 | +0.209 | [-0.169, +0.575] | 0.1280 |
-| advanced_adaptive_research_vs_production | 3451 | -27.98% | [-43.57%, -12.46%] | 1.0000 | -0.514 | [-1.099, +0.118] | 0.9467 |
-| advanced_adaptive_research_vs_buy_and_hold | 3451 | -50.85% | [-79.37%, -21.50%] | 0.9997 | -0.304 | [-0.852, +0.250] | 0.8530 |
+| advanced_adaptive_research_vs_production | 3451 | -27.98% | [-43.57%, -12.46%] | 1.0000 | -0.514 | [-1.100, +0.118] | 0.9470 |
+| advanced_adaptive_research_vs_buy_and_hold | 3451 | -50.85% | [-79.37%, -21.51%] | 0.9997 | -0.305 | [-0.853, +0.250] | 0.8534 |
 
 ## Objective Production Gate
 
@@ -88,7 +88,7 @@ Method: `block`
 | Candidate | Delta Return vs Incumbent | Delta Sharpe | Delta Worst DD | p(alpha<=0) vs Incumbent | p(delta_sharpe<=0) vs Incumbent | p(delta_sharpe<=0) vs BnH | Decision |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- |
 | legacy_confidence_research | -4.41% | +0.049 | +3.73% | 0.9990 | 0.4938 | 0.1280 | **DO NOT PROMOTE** |
-| advanced_adaptive_research | -9.96% | +0.312 | +12.48% | 1.0000 | 0.9467 | 0.8530 | **DO NOT PROMOTE** |
+| advanced_adaptive_research | -9.96% | +0.312 | +12.48% | 1.0000 | 0.9470 | 0.8534 | **DO NOT PROMOTE** |
 
 ## Notes
 
