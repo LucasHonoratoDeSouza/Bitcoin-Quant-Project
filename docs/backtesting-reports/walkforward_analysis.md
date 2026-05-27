@@ -1,6 +1,6 @@
 # Walk-Forward Purged/Embargo Analysis
 
-Generated on: **2026-05-26**
+Generated on: **2026-05-27**
 
 ## Configuration
 - Start date: `2020-01-01`
@@ -10,7 +10,7 @@ Generated on: **2026-05-26**
 - Embargo gap: `3` days
 - Fold step (selected): `45` days
 - Target minimum folds: `28`
-- Number of folds: `29`
+- Number of folds: `30`
 
 ## Fold Schedule
 
@@ -45,15 +45,16 @@ Generated on: **2026-05-26**
 | 27 | 2024-03-16 to 2025-09-06 | 7 | 2025-09-14 to 2026-01-11 | 3 | 120 |
 | 28 | 2024-04-30 to 2025-10-21 | 7 | 2025-10-29 to 2026-02-25 | 3 | 120 |
 | 29 | 2024-06-14 to 2025-12-05 | 7 | 2025-12-13 to 2026-04-11 | 3 | 120 |
+| 30 | 2024-07-29 to 2026-01-19 | 7 | 2026-01-27 to 2026-05-26 | 3 | 120 |
 
 ## Out-of-Sample Aggregate
 
 | Model | Folds | Mean Return | Median Return | Mean Sharpe | Worst Max DD | Return > BnH (folds) | Sharpe > BnH (folds) | Lower DD than BnH (folds) |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| production_legacy_cooldown1 | 29 | +11.29% | +3.65% | 1.227 | -18.70% | 13/29 | 14/29 | 25/29 |
-| legacy_cooldown3_baseline | 29 | +10.71% | +3.65% | 1.184 | -18.70% | 11/29 | 14/29 | 26/29 |
-| legacy_confidence_research | 29 | +6.88% | +3.03% | 1.276 | -14.97% | 9/29 | 21/29 | 29/29 |
-| advanced_adaptive_research | 29 | +1.22% | +0.44% | 1.492 | -7.34% | 9/29 | 20/29 | 29/29 |
+| production_legacy_cooldown1 | 30 | +10.78% | +3.54% | 1.166 | -18.70% | 14/30 | 15/30 | 26/30 |
+| legacy_cooldown3_baseline | 30 | +10.22% | +3.58% | 1.124 | -18.70% | 12/30 | 15/30 | 27/30 |
+| legacy_confidence_research | 30 | +6.61% | +3.01% | 1.214 | -14.97% | 10/30 | 22/30 | 30/30 |
+| advanced_adaptive_research | 30 | +0.60% | +0.00% | 0.533 | -7.73% | 9/30 | 14/30 | 30/30 |
 
 ## Walk-Forward Gate Decision
 
@@ -62,7 +63,7 @@ Generated on: **2026-05-26**
 | production_legacy_cooldown1 | higher_or_equal_mean_return=yes, higher_or_equal_mean_sharpe=yes, better_or_equal_worst_drawdown=yes | **IMPLEMENT WITH GUARDRAILS** |
 | legacy_cooldown3_baseline | oos baseline | **KEEP (benchmark)** |
 | legacy_confidence_research | higher_or_equal_mean_return=no, higher_or_equal_mean_sharpe=yes, better_or_equal_worst_drawdown=yes | **IMPLEMENT WITH GUARDRAILS** |
-| advanced_adaptive_research | higher_or_equal_mean_return=no, higher_or_equal_mean_sharpe=yes, better_or_equal_worst_drawdown=yes | **IMPLEMENT WITH GUARDRAILS** |
+| advanced_adaptive_research | higher_or_equal_mean_return=no, higher_or_equal_mean_sharpe=no, better_or_equal_worst_drawdown=yes | **DO NOT IMPLEMENT** |
 
 ## Bootstrap Significance (OOS Daily Returns)
 
@@ -70,12 +71,12 @@ Method: `block`
 
 | Comparison | Obs | Annualized Alpha | Alpha 95% CI | p(alpha<=0) | Delta Sharpe | Delta Sharpe 95% CI | p(delta_sharpe<=0) |
 | :--- | ---: | ---: | :--- | ---: | ---: | :--- | ---: |
-| production_vs_baseline | 3451 | +1.40% | [+0.19%, +2.88%] | 0.0117 | +0.046 | [-0.005, +0.106] | 0.0347 |
-| production_vs_buy_and_hold | 3451 | -22.86% | [-41.56%, -3.71%] | 0.9903 | +0.209 | [-0.149, +0.559] | 0.1223 |
-| legacy_confidence_research_vs_production | 3451 | -11.51% | [-19.47%, -4.18%] | 0.9990 | -0.000 | [-0.199, +0.204] | 0.4938 |
-| legacy_confidence_research_vs_buy_and_hold | 3451 | -34.38% | [-56.65%, -11.60%] | 0.9983 | +0.209 | [-0.169, +0.575] | 0.1280 |
-| advanced_adaptive_research_vs_production | 3451 | -28.30% | [-43.90%, -12.64%] | 1.0000 | -0.668 | [-1.266, -0.030] | 0.9797 |
-| advanced_adaptive_research_vs_buy_and_hold | 3451 | -51.16% | [-79.70%, -22.23%] | 0.9997 | -0.459 | [-1.003, +0.101] | 0.9444 |
+| production_vs_baseline | 3570 | +1.36% | [+0.15%, +2.81%] | 0.0117 | +0.046 | [-0.003, +0.102] | 0.0317 |
+| production_vs_buy_and_hold | 3570 | -21.28% | [-40.72%, -2.75%] | 0.9850 | +0.227 | [-0.115, +0.570] | 0.0990 |
+| legacy_confidence_research_vs_production | 3570 | -10.92% | [-18.77%, -3.74%] | 0.9983 | +0.012 | [-0.176, +0.219] | 0.4259 |
+| legacy_confidence_research_vs_buy_and_hold | 3570 | -32.20% | [-55.23%, -9.53%] | 0.9967 | +0.239 | [-0.113, +0.593] | 0.0993 |
+| advanced_adaptive_research_vs_production | 3570 | -28.76% | [-44.65%, -13.98%] | 1.0000 | -0.960 | [-1.594, -0.327] | 0.9997 |
+| advanced_adaptive_research_vs_buy_and_hold | 3570 | -50.04% | [-79.36%, -21.16%] | 0.9997 | -0.733 | [-1.339, -0.141] | 0.9927 |
 
 ## Objective Production Gate
 
@@ -87,8 +88,8 @@ Method: `block`
 
 | Candidate | Delta Return vs Incumbent | Delta Sharpe | Delta Worst DD | p(alpha<=0) vs Incumbent | p(delta_sharpe<=0) vs Incumbent | p(delta_sharpe<=0) vs BnH | Decision |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- |
-| legacy_confidence_research | -4.41% | +0.049 | +3.73% | 0.9990 | 0.4938 | 0.1280 | **DO NOT PROMOTE** |
-| advanced_adaptive_research | -10.07% | +0.265 | +11.36% | 1.0000 | 0.9797 | 0.9444 | **DO NOT PROMOTE** |
+| legacy_confidence_research | -4.17% | +0.048 | +3.73% | 0.9983 | 0.4259 | 0.0993 | **DO NOT PROMOTE** |
+| advanced_adaptive_research | -10.18% | -0.633 | +10.97% | 1.0000 | 0.9997 | 0.9927 | **DO NOT PROMOTE** |
 
 ## Notes
 
