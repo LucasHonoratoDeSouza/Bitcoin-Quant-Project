@@ -1,5 +1,5 @@
 {
-  "generated_on": "2026-06-03",
+  "generated_on": "2026-06-04",
   "policy_version": "oos_gate_v1",
   "incumbent_model": "production_legacy_cooldown1",
   "selected_model": "production_legacy_cooldown1",
@@ -28,9 +28,9 @@
     },
     {
       "candidate": "advanced_adaptive_research",
-      "mean_return_delta_pct": -10.31,
-      "mean_sharpe_delta": -0.661,
-      "worst_drawdown_delta_pct": 7.18,
+      "mean_return_delta_pct": -10.3,
+      "mean_sharpe_delta": -0.667,
+      "worst_drawdown_delta_pct": 7.22,
       "alpha_p_value_vs_production": 1.0,
       "delta_sharpe_p_value_vs_production": 0.9997,
       "delta_sharpe_p_value_vs_bnh": 0.996,
