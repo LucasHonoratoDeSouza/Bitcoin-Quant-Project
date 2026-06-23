@@ -1,5 +1,5 @@
 {
-  "generated_on": "2026-06-22",
+  "generated_on": "2026-06-23",
   "policy_version": "oos_gate_v1",
   "incumbent_model": "production_legacy_cooldown1",
   "selected_model": "production_legacy_cooldown1",
@@ -21,19 +21,19 @@
       "mean_sharpe_delta": 0.048,
       "worst_drawdown_delta_pct": 3.73,
       "alpha_p_value_vs_production": 0.9983,
-      "delta_sharpe_p_value_vs_production": 0.4259,
-      "delta_sharpe_p_value_vs_bnh": 0.0993,
+      "delta_sharpe_p_value_vs_production": 0.4252,
+      "delta_sharpe_p_value_vs_bnh": 0.099,
       "evidence": "performance=yes, significance=no, vs_bnh=no, folds=yes",
       "decision": "DO NOT PROMOTE"
     },
     {
       "candidate": "advanced_adaptive_research",
-      "mean_return_delta_pct": -10.08,
-      "mean_sharpe_delta": -0.571,
-      "worst_drawdown_delta_pct": 8.07,
+      "mean_return_delta_pct": -9.93,
+      "mean_sharpe_delta": -0.652,
+      "worst_drawdown_delta_pct": 8.85,
       "alpha_p_value_vs_production": 1.0,
-      "delta_sharpe_p_value_vs_production": 0.999,
-      "delta_sharpe_p_value_vs_bnh": 0.9937,
+      "delta_sharpe_p_value_vs_production": 0.9983,
+      "delta_sharpe_p_value_vs_bnh": 0.9897,
       "evidence": "performance=no, significance=no, vs_bnh=no, folds=yes",
       "decision": "DO NOT PROMOTE"
     }
