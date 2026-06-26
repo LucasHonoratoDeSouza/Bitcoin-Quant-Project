@@ -1,0 +1,45 @@
+{
+    "timestamp": "2026-06-26T00:00:00",
+    "raw_source": "/home/runner/work/Bitcoin-Quant-Project/Bitcoin-Quant-Project/data/raw/daily_data_2026-06-26.json",
+    "market_data": {
+        "current_price": 60051.522030860324,
+        "daily_change_pct": 0.5675583825996298,
+        "weekly_change_pct": -5.451011199475836,
+        "monthly_change_pct": -19.234240838120904,
+        "ema_365": 85293.2852119269,
+        "price_vs_ema_pct": -29.5940801416533
+    },
+    "metrics": {
+        "mvrv": 1.6982072995452513,
+        "mvrv_zscore": -1.3200734957929836,
+        "sopr": 1.0157392973480464,
+        "rup": 0.6740089133059286,
+        "mayer_multiple": 0.8778007929295834,
+        "fear_and_greed": 13,
+        "interest_rate": 3.63,
+        "m2_yoy": 5.580313182711283,
+        "inflation_yoy": 4.166614684049648,
+        "funding_rate": null,
+        "realized_vol_30d": 0.42902074106762456,
+        "realized_vol_90d": 0.3694324804585473,
+        "momentum_63d": -0.23696851182012024,
+        "drawdown_180d": -0.38386371868550495,
+        "trend_tscore_90d": -4.466290599880644
+    },
+    "flags": {
+        "is_accumulation": false,
+        "is_overheated": false,
+        "is_fear_extreme": true,
+        "is_greed_extreme": false,
+        "is_liquidity_good": true,
+        "is_inflation_high": true,
+        "is_inflation_falling": false,
+        "is_bull_trend": false,
+        "is_derivatives_risk": false,
+        "is_volatility_opportunity": false,
+        "is_positive_seasonality": false,
+        "is_high_corr_spx": false,
+        "is_high_corr_gold": false
+    },
+    "market_cycle_phase": "Bear Market / Distribution"
+}
