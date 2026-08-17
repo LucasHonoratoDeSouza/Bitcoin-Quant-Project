@@ -1573,6 +1573,16 @@
             "debt": 0.0,
             "equity": 1820.78,
             "interest_paid": 0.0
+        },
+        {
+            "date": "2026-08-17",
+            "price": 63976.03790914072,
+            "cash": 1280.92,
+            "btc_amount": 0.008561963908763378,
+            "btc_value": 547.76,
+            "debt": 0.0,
+            "equity": 1828.68,
+            "interest_paid": 0.0
         }
     ],
     "last_trade_date": "2026-07-11 00:00:00"
