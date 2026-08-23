@@ -21,50 +21,6 @@ Systematic Bitcoin allocation pipeline with forward testing first, honest backte
 > **Status**: Active | Drawdown
 <!-- live-stats:end -->
 
-## 2) Backtest Results
-
-Backtest version currently in use is the honest configuration:
-
-- signal generated on close of day t
-- execution at open of day t+1
-- cost-aware accounting (transaction cost + debt carry)
-- advanced scorer calibration cutoff before test start (no future leakage)
-
-Latest run metadata:
-
-- generated on: 2026-04-20
-- warm-up start: 2018-01-01
-- backtest start: 2021-01-01
-- backtest end: 2026-04-20
-- trading cost: 15 bps per side
-- debt interest: 10% annual
-
-### 2.1 Backtest Model Comparison
-
-| Model | Total Return | CAGR | Max Drawdown | Sharpe | Sortino | Calmar | Volatility | Trades | Avg Lev | Max Lev |
-| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| legacy_signal + legacy_allocation(cooldown=3) | +743.41% | +49.54% | -30.29% | 1.228 | 1.765 | 1.636 | 38.88% | 102 | 0.61x | 1.00x |
-| legacy_signal + legacy_allocation(cooldown=1) | +764.73% | +50.25% | -30.87% | 1.241 | 1.785 | 1.628 | 38.86% | 113 | 0.61x | 1.00x |
-| advanced_signal + legacy_allocation(cooldown=3) | +58.35% | +9.06% | -32.47% | 0.590 | 0.826 | 0.279 | 17.20% | 48 | 0.31x | 0.55x |
-| advanced_signal + adaptive_allocation | +44.11% | +7.14% | -34.92% | 0.469 | 0.565 | 0.204 | 18.27% | 1113 | 0.25x | 0.63x |
-| legacy_signal + confidence_allocation | +539.97% | +41.95% | -24.00% | 1.298 | 1.805 | 1.748 | 30.58% | 346 | 0.45x | 0.93x |
-
-### 2.2 Buy and Hold Benchmark
-
-| Metric | Value |
-| :--- | ---: |
-| Total Return | +154.73% |
-| CAGR | +19.30% |
-| Max Drawdown | -76.63% |
-| Sharpe | 0.590 |
-
-References:
-
-- `docs/backtesting-reports/walkforward_analysis.md`
-- `docs/backtesting-reports/backtest_summary.md`
-- `tests/backtest/model_comparison.csv`
-- `tests/backtest/walkforward_results.csv`
-
 ## 3) Technical Presentation (English)
 
 This section is the English version of the technical presentation currently maintained in `apresentação.md`.
