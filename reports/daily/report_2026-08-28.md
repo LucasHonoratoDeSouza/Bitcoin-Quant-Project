@@ -3,15 +3,15 @@
 ## 💰 Performance
 | Metric | Value |
 | :--- | :--- |
-| **Total Equity** | **$1,952.20** |
-| **ROI (Total)** | `-2.39%` |
-| **Alpha (vs BTC Buy & Hold)** | `+4.80%` |
+| **Total Equity** | **$1,945.74** |
+| **ROI (Total)** | `-2.71%` |
+| **Alpha (vs BTC Buy & Hold)** | `+7.45%` |
 
 ## 💼 Portfolio Composition
 | Asset | Value | Allocation | Details |
 | :--- | :--- | :--- | :--- |
-| 💵 **Cash** | $1,750.70 | **89.7%** | - |
-| 🟠 **Bitcoin** | $201.50 | **10.3%** | `0.002507 BTC` |
+| 💵 **Cash** | $1,750.70 | **90.0%** | - |
+| 🟠 **Bitcoin** | $195.04 | **10.0%** | `0.002507 BTC` |
 | 🔴 **Debt** | $0.00 | 0.0% | Interest: `$0.00` |
 
 ---
