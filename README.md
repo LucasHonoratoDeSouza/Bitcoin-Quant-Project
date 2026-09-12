@@ -12,9 +12,9 @@ Systematic Bitcoin allocation pipeline with forward testing first, honest backte
 | Metric | Value | Description |
 | :--- | :--- | :--- |
 | **Initial Capital** | `$2,000.00` | Starting Equity (Cash + BTC) |
-| **Current Equity** | `$1,942.32` | Updated from the latest paper trading snapshot |
-| **Alpha vs BTC** | `+7.94%` | Strategy ROI minus BTC buy-and-hold ROI over the same forward-testing window |
-| **Net Profit** | `$-57.68` | **-2.88%** |
+| **Current Equity** | `$1,942.29` | Updated from the latest paper trading snapshot |
+| **Alpha vs BTC** | `+7.95%` | Strategy ROI minus BTC buy-and-hold ROI over the same forward-testing window |
+| **Net Profit** | `$-57.71` | **-2.89%** |
 | **Avg. Monthly Return** | `-0.30%` | Projected (30-day) |
 | **Win Rate** | `33.3%` | 9 trades executed |
 
