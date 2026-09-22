@@ -1,6 +1,6 @@
 # Walk-Forward Purged/Embargo Analysis
 
-Generated on: **2026-09-21**
+Generated on: **2026-09-22**
 
 ## Configuration
 - Start date: `2020-01-01`
@@ -56,7 +56,7 @@ Generated on: **2026-09-21**
 | production_legacy_cooldown1 | 32 | +10.07% | +3.08% | 1.086 | -18.70% | 16/32 | 16/32 | 28/32 |
 | legacy_cooldown3_baseline | 32 | +9.55% | +3.41% | 1.046 | -18.70% | 14/32 | 16/32 | 29/32 |
 | legacy_confidence_research | 32 | +6.18% | +2.99% | 1.125 | -14.97% | 12/32 | 23/32 | 32/32 |
-| advanced_adaptive_research | 32 | +0.68% | +0.00% | 0.557 | -11.05% | 10/32 | 15/32 | 32/32 |
+| advanced_adaptive_research | 32 | +0.73% | +0.00% | 0.570 | -11.14% | 11/32 | 15/32 | 32/32 |
 
 ## Walk-Forward Gate Decision
 
@@ -75,10 +75,10 @@ Method: `block`
 | :--- | ---: | ---: | :--- | ---: | ---: | :--- | ---: |
 | production_vs_baseline | 3808 | +1.27% | [+0.15%, +2.69%] | 0.0113 | +0.044 | [-0.003, +0.097] | 0.0367 |
 | production_vs_buy_and_hold | 3808 | -19.68% | [-37.74%, -1.28%] | 0.9823 | +0.234 | [-0.089, +0.556] | 0.0810 |
-| legacy_confidence_research_vs_production | 3808 | -10.23% | [-17.55%, -3.53%] | 0.9990 | +0.016 | [-0.181, +0.213] | 0.4442 |
+| legacy_confidence_research_vs_production | 3808 | -10.22% | [-17.55%, -3.53%] | 0.9990 | +0.016 | [-0.181, +0.213] | 0.4442 |
 | legacy_confidence_research_vs_buy_and_hold | 3808 | -29.91% | [-52.03%, -7.90%] | 0.9963 | +0.251 | [-0.112, +0.596] | 0.0850 |
-| advanced_adaptive_research_vs_production | 3808 | -26.45% | [-40.19%, -13.00%] | 0.9997 | -0.989 | [-1.600, -0.360] | 0.9993 |
-| advanced_adaptive_research_vs_buy_and_hold | 3808 | -46.13% | [-73.62%, -18.95%] | 0.9993 | -0.755 | [-1.358, -0.143] | 0.9937 |
+| advanced_adaptive_research_vs_production | 3808 | -26.31% | [-40.03%, -12.94%] | 0.9997 | -0.976 | [-1.597, -0.349] | 0.9990 |
+| advanced_adaptive_research_vs_buy_and_hold | 3808 | -45.99% | [-73.49%, -18.94%] | 0.9993 | -0.741 | [-1.344, -0.135] | 0.9930 |
 
 ## Objective Production Gate
 
@@ -91,7 +91,7 @@ Method: `block`
 | Candidate | Delta Return vs Incumbent | Delta Sharpe | Delta Worst DD | p(alpha<=0) vs Incumbent | p(delta_sharpe<=0) vs Incumbent | p(delta_sharpe<=0) vs BnH | Decision |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- |
 | legacy_confidence_research | -3.89% | +0.039 | +3.73% | 0.9990 | 0.4442 | 0.0850 | **DO NOT PROMOTE** |
-| advanced_adaptive_research | -9.39% | -0.529 | +7.65% | 0.9997 | 0.9993 | 0.9937 | **DO NOT PROMOTE** |
+| advanced_adaptive_research | -9.34% | -0.516 | +7.56% | 0.9997 | 0.9990 | 0.9930 | **DO NOT PROMOTE** |
 
 ## Notes
 
