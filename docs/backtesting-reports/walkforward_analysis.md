@@ -1,6 +1,6 @@
 # Walk-Forward Purged/Embargo Analysis
 
-Generated on: **2026-10-08**
+Generated on: **2026-10-09**
 
 ## Configuration
 - Start date: `2020-01-01`
@@ -10,7 +10,7 @@ Generated on: **2026-10-08**
 - Embargo gap: `3` days
 - Fold step (selected): `45` days
 - Target minimum folds: `28`
-- Number of folds: `32`
+- Number of folds: `33`
 
 ## Fold Schedule
 
@@ -48,15 +48,16 @@ Generated on: **2026-10-08**
 | 30 | 2024-07-29 to 2026-01-19 | 7 | 2026-01-27 to 2026-05-26 | 3 | 120 |
 | 31 | 2024-09-12 to 2026-03-05 | 7 | 2026-03-13 to 2026-07-10 | 3 | 120 |
 | 32 | 2024-10-27 to 2026-04-19 | 7 | 2026-04-27 to 2026-08-24 | 3 | 120 |
+| 33 | 2024-12-11 to 2026-06-03 | 7 | 2026-06-11 to 2026-10-08 | 3 | 120 |
 
 ## Out-of-Sample Aggregate
 
 | Model | Folds | Mean Return | Median Return | Mean Sharpe | Worst Max DD | Return > BnH (folds) | Sharpe > BnH (folds) | Lower DD than BnH (folds) |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| production_legacy_cooldown1 | 32 | +10.07% | +3.08% | 1.086 | -18.70% | 16/32 | 16/32 | 28/32 |
-| legacy_cooldown3_baseline | 32 | +9.55% | +3.41% | 1.046 | -18.70% | 14/32 | 16/32 | 29/32 |
-| legacy_confidence_research | 32 | +6.18% | +2.99% | 1.125 | -14.97% | 12/32 | 23/32 | 32/32 |
-| advanced_adaptive_research | 32 | +0.73% | +0.00% | 0.530 | -12.04% | 11/32 | 15/32 | 32/32 |
+| production_legacy_cooldown1 | 33 | +10.02% | +3.42% | 1.121 | -18.70% | 16/33 | 17/33 | 29/33 |
+| legacy_cooldown3_baseline | 33 | +9.51% | +3.52% | 1.083 | -18.70% | 14/33 | 17/33 | 30/33 |
+| legacy_confidence_research | 33 | +6.08% | +3.00% | 1.158 | -14.97% | 12/33 | 23/33 | 33/33 |
+| advanced_adaptive_research | 33 | +1.02% | +0.00% | 0.584 | -11.77% | 11/33 | 16/33 | 33/33 |
 
 ## Walk-Forward Gate Decision
 
@@ -73,12 +74,12 @@ Method: `block`
 
 | Comparison | Obs | Annualized Alpha | Alpha 95% CI | p(alpha<=0) | Delta Sharpe | Delta Sharpe 95% CI | p(delta_sharpe<=0) |
 | :--- | ---: | ---: | :--- | ---: | ---: | :--- | ---: |
-| production_vs_baseline | 3808 | +1.27% | [+0.15%, +2.69%] | 0.0113 | +0.044 | [-0.003, +0.097] | 0.0367 |
-| production_vs_buy_and_hold | 3808 | -19.68% | [-37.74%, -1.28%] | 0.9823 | +0.234 | [-0.089, +0.556] | 0.0810 |
-| legacy_confidence_research_vs_production | 3808 | -10.22% | [-17.55%, -3.53%] | 0.9990 | +0.016 | [-0.181, +0.213] | 0.4442 |
-| legacy_confidence_research_vs_buy_and_hold | 3808 | -29.91% | [-52.03%, -7.90%] | 0.9963 | +0.251 | [-0.112, +0.596] | 0.0850 |
-| advanced_adaptive_research_vs_production | 3808 | -26.25% | [-40.05%, -13.08%] | 0.9997 | -0.989 | [-1.595, -0.373] | 0.9993 |
-| advanced_adaptive_research_vs_buy_and_hold | 3808 | -45.93% | [-73.15%, -19.17%] | 0.9993 | -0.754 | [-1.343, -0.169] | 0.9957 |
+| production_vs_baseline | 3927 | +1.23% | [+0.13%, +2.60%] | 0.0137 | +0.043 | [-0.004, +0.096] | 0.0387 |
+| production_vs_buy_and_hold | 3927 | -20.87% | [-38.09%, -3.27%] | 0.9900 | +0.216 | [-0.100, +0.529] | 0.0936 |
+| legacy_confidence_research_vs_production | 3927 | -10.38% | [-17.58%, -3.98%] | 0.9993 | +0.006 | [-0.193, +0.204] | 0.4735 |
+| legacy_confidence_research_vs_buy_and_hold | 3927 | -31.24% | [-52.58%, -10.35%] | 0.9980 | +0.222 | [-0.112, +0.558] | 0.1080 |
+| advanced_adaptive_research_vs_production | 3927 | -25.32% | [-39.15%, -12.58%] | 0.9997 | -0.881 | [-1.483, -0.262] | 0.9973 |
+| advanced_adaptive_research_vs_buy_and_hold | 3927 | -46.19% | [-72.72%, -20.69%] | 0.9997 | -0.665 | [-1.253, -0.079] | 0.9880 |
 
 ## Objective Production Gate
 
@@ -90,8 +91,8 @@ Method: `block`
 
 | Candidate | Delta Return vs Incumbent | Delta Sharpe | Delta Worst DD | p(alpha<=0) vs Incumbent | p(delta_sharpe<=0) vs Incumbent | p(delta_sharpe<=0) vs BnH | Decision |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- |
-| legacy_confidence_research | -3.89% | +0.039 | +3.73% | 0.9990 | 0.4442 | 0.0850 | **DO NOT PROMOTE** |
-| advanced_adaptive_research | -9.34% | -0.556 | +6.66% | 0.9997 | 0.9993 | 0.9957 | **DO NOT PROMOTE** |
+| legacy_confidence_research | -3.94% | +0.037 | +3.73% | 0.9993 | 0.4735 | 0.1080 | **DO NOT PROMOTE** |
+| advanced_adaptive_research | -9.00% | -0.537 | +6.93% | 0.9997 | 0.9973 | 0.9880 | **DO NOT PROMOTE** |
 
 ## Notes
 
