@@ -1,17 +1,17 @@
-# 📊 Paper Trading Report: 2026-10-13
+# 📊 Paper Trading Report: 2026-10-14
 
 ## 💰 Performance
 | Metric | Value |
 | :--- | :--- |
-| **Total Equity** | **$1,956.91** |
-| **ROI (Total)** | `-2.15%` |
-| **Alpha (vs BTC Buy & Hold)** | `+1.84%` |
+| **Total Equity** | **$1,953.43** |
+| **ROI (Total)** | `-2.33%` |
+| **Alpha (vs BTC Buy & Hold)** | `+3.30%` |
 
 ## 💼 Portfolio Composition
 | Asset | Value | Allocation | Details |
 | :--- | :--- | :--- | :--- |
-| 💵 **Cash** | $1,751.77 | **89.5%** | - |
-| 🟠 **Bitcoin** | $205.14 | **10.5%** | `0.002468 BTC` |
+| 💵 **Cash** | $1,751.77 | **89.7%** | - |
+| 🟠 **Bitcoin** | $201.66 | **10.3%** | `0.002468 BTC` |
 | 🔴 **Debt** | $0.00 | 0.0% | Interest: `$0.00` |
 
 ---
