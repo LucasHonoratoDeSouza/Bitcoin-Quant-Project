@@ -1,6 +1,6 @@
 # Walk-Forward Purged/Embargo Analysis
 
-Generated on: **2026-11-13**
+Generated on: **2026-11-14**
 
 ## Configuration
 - Start date: `2020-01-01`
@@ -78,8 +78,8 @@ Method: `block`
 | production_vs_buy_and_hold | 3927 | -20.87% | [-38.09%, -3.27%] | 0.9900 | +0.216 | [-0.100, +0.529] | 0.0936 |
 | legacy_confidence_research_vs_production | 3927 | -10.38% | [-17.58%, -3.98%] | 0.9993 | +0.006 | [-0.193, +0.204] | 0.4735 |
 | legacy_confidence_research_vs_buy_and_hold | 3927 | -31.25% | [-52.58%, -10.35%] | 0.9980 | +0.222 | [-0.112, +0.558] | 0.1080 |
-| advanced_adaptive_research_vs_production | 3927 | -25.34% | [-39.25%, -12.61%] | 0.9997 | -0.843 | [-1.450, -0.218] | 0.9957 |
-| advanced_adaptive_research_vs_buy_and_hold | 3927 | -46.21% | [-72.97%, -20.60%] | 0.9993 | -0.627 | [-1.241, -0.012] | 0.9773 |
+| advanced_adaptive_research_vs_production | 3927 | -25.35% | [-39.25%, -12.61%] | 0.9997 | -0.843 | [-1.451, -0.218] | 0.9957 |
+| advanced_adaptive_research_vs_buy_and_hold | 3927 | -46.21% | [-72.96%, -20.61%] | 0.9993 | -0.628 | [-1.241, -0.013] | 0.9773 |
 
 ## Objective Production Gate
 
