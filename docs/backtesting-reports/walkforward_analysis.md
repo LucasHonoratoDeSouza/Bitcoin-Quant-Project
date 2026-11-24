@@ -57,8 +57,8 @@ Generated on: **2026-11-24**
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | production_legacy_cooldown1 | 34 | +9.08% | +3.08% | 1.009 | -30.37% | 16/34 | 17/34 | 30/34 |
 | legacy_cooldown3_baseline | 34 | +8.58% | +3.41% | 0.972 | -30.37% | 14/34 | 17/34 | 31/34 |
-| legacy_confidence_research | 34 | +5.50% | +2.99% | 1.044 | -17.48% | 12/34 | 23/34 | 34/34 |
-| advanced_adaptive_research | 34 | +0.96% | +0.00% | 0.545 | -13.43% | 12/34 | 16/34 | 34/34 |
+| legacy_confidence_research | 34 | +5.50% | +2.99% | 1.044 | -17.54% | 12/34 | 23/34 | 34/34 |
+| advanced_adaptive_research | 34 | +0.89% | +0.00% | 0.522 | -13.43% | 12/34 | 15/34 | 34/34 |
 
 ## Walk-Forward Gate Decision
 
@@ -77,10 +77,10 @@ Method: `block`
 | :--- | ---: | ---: | :--- | ---: | ---: | :--- | ---: |
 | production_vs_baseline | 4046 | +1.20% | [+0.16%, +2.46%] | 0.0093 | +0.043 | [-0.003, +0.093] | 0.0307 |
 | production_vs_buy_and_hold | 4046 | -22.03% | [-39.03%, -4.47%] | 0.9957 | +0.113 | [-0.210, +0.445] | 0.2466 |
-| legacy_confidence_research_vs_production | 4046 | -9.25% | [-16.54%, -2.57%] | 0.9970 | +0.011 | [-0.187, +0.209] | 0.4608 |
-| legacy_confidence_research_vs_buy_and_hold | 4046 | -31.28% | [-51.58%, -10.24%] | 0.9983 | +0.124 | [-0.223, +0.476] | 0.2359 |
-| advanced_adaptive_research_vs_production | 4046 | -22.62% | [-36.41%, -9.52%] | 0.9993 | -0.739 | [-1.334, -0.135] | 0.9937 |
-| advanced_adaptive_research_vs_buy_and_hold | 4046 | -44.65% | [-70.40%, -18.88%] | 0.9997 | -0.626 | [-1.204, -0.062] | 0.9860 |
+| legacy_confidence_research_vs_production | 4046 | -9.26% | [-16.54%, -2.58%] | 0.9970 | +0.011 | [-0.187, +0.209] | 0.4622 |
+| legacy_confidence_research_vs_buy_and_hold | 4046 | -31.29% | [-51.58%, -10.25%] | 0.9987 | +0.124 | [-0.224, +0.475] | 0.2363 |
+| advanced_adaptive_research_vs_production | 4046 | -22.85% | [-36.61%, -9.81%] | 0.9993 | -0.770 | [-1.358, -0.168] | 0.9953 |
+| advanced_adaptive_research_vs_buy_and_hold | 4046 | -44.88% | [-70.67%, -19.16%] | 0.9997 | -0.656 | [-1.233, -0.088] | 0.9893 |
 
 ## Objective Production Gate
 
@@ -92,8 +92,8 @@ Method: `block`
 
 | Candidate | Delta Return vs Incumbent | Delta Sharpe | Delta Worst DD | p(alpha<=0) vs Incumbent | p(delta_sharpe<=0) vs Incumbent | p(delta_sharpe<=0) vs BnH | Decision |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- |
-| legacy_confidence_research | -3.58% | +0.035 | +12.89% | 0.9970 | 0.4608 | 0.2359 | **DO NOT PROMOTE** |
-| advanced_adaptive_research | -8.12% | -0.464 | +16.94% | 0.9993 | 0.9937 | 0.9860 | **DO NOT PROMOTE** |
+| legacy_confidence_research | -3.58% | +0.035 | +12.83% | 0.9970 | 0.4622 | 0.2363 | **DO NOT PROMOTE** |
+| advanced_adaptive_research | -8.19% | -0.487 | +16.94% | 0.9993 | 0.9953 | 0.9893 | **DO NOT PROMOTE** |
 
 ## Notes
 

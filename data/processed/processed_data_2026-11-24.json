@@ -2,29 +2,29 @@
     "timestamp": "2026-11-24T00:00:00",
     "raw_source": "/home/runner/work/Bitcoin-Quant-Project/Bitcoin-Quant-Project/data/raw/daily_data_2026-11-24.json",
     "market_data": {
-        "current_price": 60771.628700842564,
-        "daily_change_pct": -0.7446299865853346,
-        "weekly_change_pct": -6.345849025626355,
-        "monthly_change_pct": -24.0818197083248,
-        "ema_365": 75980.63425755994,
-        "price_vs_ema_pct": -20.016949983809994
+        "current_price": 59722.8029642383,
+        "daily_change_pct": -2.4576264751063905,
+        "weekly_change_pct": -7.962177005994977,
+        "monthly_change_pct": -25.392051852308263,
+        "ema_365": 75974.90296938177,
+        "price_vs_ema_pct": -21.391406069571612
     },
     "metrics": {
         "mvrv": 1.6982072995452513,
-        "mvrv_zscore": -1.1257891858805895,
+        "mvrv_zscore": -1.1230152487072949,
         "sopr": 1.0157392973480464,
         "rup": 0.6740089133059286,
         "mayer_multiple": 0.8778007929295834,
         "fear_and_greed": 11,
         "interest_rate": 3.88,
-        "m2_yoy": 5.709912773373316,
+        "m2_yoy": 5.893417210020213,
         "inflation_yoy": 4.080556369412017,
         "funding_rate": null,
-        "realized_vol_30d": 0.4664634818271813,
-        "realized_vol_90d": 0.4026401786465704,
-        "momentum_63d": -0.24624176339226833,
-        "drawdown_180d": -0.29376614149368707,
-        "trend_tscore_90d": -5.933056606175705
+        "realized_vol_30d": 0.4673484658019676,
+        "realized_vol_90d": 0.4026672594781923,
+        "momentum_63d": -0.2931994836706653,
+        "drawdown_180d": -0.2931994836706653,
+        "trend_tscore_90d": -6.3865834288989
     },
     "flags": {
         "is_accumulation": false,

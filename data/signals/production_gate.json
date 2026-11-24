@@ -19,21 +19,21 @@
       "candidate": "legacy_confidence_research",
       "mean_return_delta_pct": -3.58,
       "mean_sharpe_delta": 0.035,
-      "worst_drawdown_delta_pct": 12.89,
+      "worst_drawdown_delta_pct": 12.83,
       "alpha_p_value_vs_production": 0.997,
-      "delta_sharpe_p_value_vs_production": 0.4608,
-      "delta_sharpe_p_value_vs_bnh": 0.2359,
+      "delta_sharpe_p_value_vs_production": 0.4622,
+      "delta_sharpe_p_value_vs_bnh": 0.2363,
       "evidence": "performance=yes, significance=no, vs_bnh=no, folds=yes",
       "decision": "DO NOT PROMOTE"
     },
     {
       "candidate": "advanced_adaptive_research",
-      "mean_return_delta_pct": -8.12,
-      "mean_sharpe_delta": -0.464,
+      "mean_return_delta_pct": -8.19,
+      "mean_sharpe_delta": -0.487,
       "worst_drawdown_delta_pct": 16.94,
       "alpha_p_value_vs_production": 0.9993,
-      "delta_sharpe_p_value_vs_production": 0.9937,
-      "delta_sharpe_p_value_vs_bnh": 0.986,
+      "delta_sharpe_p_value_vs_production": 0.9953,
+      "delta_sharpe_p_value_vs_bnh": 0.9893,
       "evidence": "performance=no, significance=no, vs_bnh=no, folds=yes",
       "decision": "DO NOT PROMOTE"
     }

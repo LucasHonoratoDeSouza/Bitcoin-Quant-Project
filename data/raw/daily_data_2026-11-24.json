@@ -2,11 +2,11 @@
     "timestamp": "2026-11-24T00:00:00",
     "metrics": {
         "btc_price_ema_365": {
-            "current_price": 60771.628700842564,
-            "ema_365": 75980.63425755994,
-            "daily_change_pct": -0.7446299865853346,
-            "weekly_change_pct": -6.345849025626355,
-            "monthly_change_pct": -24.0818197083248
+            "current_price": 59722.8029642383,
+            "ema_365": 75974.90296938177,
+            "daily_change_pct": -2.4576264751063905,
+            "weekly_change_pct": -7.962177005994977,
+            "monthly_change_pct": -25.392051852308263
         },
         "interest_rate": {
             "current_rate": 3.88,
@@ -14,9 +14,9 @@
             "yearly_change_pct": -5.134474327628361
         },
         "m2_supply": {
-            "m2_monthly_pct": 0.4849598084194273,
-            "m2_quarter_pct": 1.4568176204734495,
-            "m2_year_pct": 5.709912773373316
+            "m2_monthly_pct": 0.506100972482626,
+            "m2_quarter_pct": 1.5338283579191758,
+            "m2_year_pct": 5.893417210020213
         },
         "mvrv": 1.6982072995452513,
         "mvrv_crosses": [
@@ -48,8 +48,8 @@
             "timestamp": 1795478400
         },
         "macro_correlations": {
-            "corr_spx_90d": 0.5087334685399528,
-            "corr_gold_90d": 0.42811622554481304
+            "corr_spx_90d": 0.512136122337609,
+            "corr_gold_90d": 0.442188729343481
         }
     },
     "meta": {
