@@ -1,6 +1,6 @@
 # Walk-Forward Purged/Embargo Analysis
 
-Generated on: **2026-11-25**
+Generated on: **2026-11-26**
 
 ## Configuration
 - Start date: `2020-01-01`
@@ -58,7 +58,7 @@ Generated on: **2026-11-25**
 | production_legacy_cooldown1 | 34 | +9.08% | +3.08% | 1.009 | -30.37% | 16/34 | 17/34 | 30/34 |
 | legacy_cooldown3_baseline | 34 | +8.58% | +3.41% | 0.972 | -30.37% | 14/34 | 17/34 | 31/34 |
 | legacy_confidence_research | 34 | +5.50% | +2.99% | 1.044 | -17.54% | 12/34 | 23/34 | 34/34 |
-| advanced_adaptive_research | 34 | +0.88% | +0.00% | 0.521 | -13.44% | 12/34 | 15/34 | 34/34 |
+| advanced_adaptive_research | 34 | +0.88% | +0.00% | 0.519 | -13.44% | 12/34 | 15/34 | 34/34 |
 
 ## Walk-Forward Gate Decision
 
@@ -93,7 +93,7 @@ Method: `block`
 | Candidate | Delta Return vs Incumbent | Delta Sharpe | Delta Worst DD | p(alpha<=0) vs Incumbent | p(delta_sharpe<=0) vs Incumbent | p(delta_sharpe<=0) vs BnH | Decision |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- |
 | legacy_confidence_research | -3.58% | +0.035 | +12.83% | 0.9970 | 0.4622 | 0.2363 | **DO NOT PROMOTE** |
-| advanced_adaptive_research | -8.20% | -0.488 | +16.93% | 0.9993 | 0.9957 | 0.9897 | **DO NOT PROMOTE** |
+| advanced_adaptive_research | -8.20% | -0.490 | +16.93% | 0.9993 | 0.9957 | 0.9897 | **DO NOT PROMOTE** |
 
 ## Notes
 
